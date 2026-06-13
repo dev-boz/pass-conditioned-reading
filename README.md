@@ -1,10 +1,10 @@
 # Pass-Conditioned Reading
 
-Pre-registration and gated experiment scaffolding for **Pass-Conditioned Architectures for Context Diffusion** — a multi-pass reading architecture in which one schedule position jointly governs *what the model is shown* (input view resolution) and *what it must emit* (output detail level), over an external source that is never reconstructed.
+Pre-registration and gated experiment scaffolding for **pass-conditioned reading** — a multi-pass architecture in which one schedule position jointly governs *what the model is shown* (input view resolution) and *what it must emit* (output detail level), over an external source that is never reconstructed.
 
 This repository is the **public pre-registration and the running audit trail**, not a finished result. It exists so the design, the kill criteria, and the cheap gates are all on record *before* the load-bearing training run (E2′) is attempted. Builds on the parent proposal, [DiSCo / diffusive-semantic-compression](https://github.com/dev-boz/diffusive-semantic-compression).
 
-> **Documentation under CC BY 4.0; code under Apache 2.0.** (`LICENSE-CC-BY-4.0.txt`, `LICENSE-Apache-2.0.txt`; split by artifact type — see *Licensing* below.)
+> **Documentation under CC BY 4.0; code under Apache 2.0.** (`LICENSE-CC-BY-4.0.txt`, `LICENSE-Apache-2.0.txt`; split by artifact type — see *Licensing* below. GitHub's sidebar shows no license because it doesn't classify a dual-file split; both license files are present.)
 
 ## Start here
 
