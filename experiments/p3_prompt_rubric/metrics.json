@@ -1,0 +1,199 @@
+{
+  "config_hash": "e0313a483d926888",
+  "doc_id": "govreport-00055",
+  "K": 6,
+  "mean_formulas": {
+    "micro_validity": "sum(n_valid) / sum(n_candidate_lines) over the arm's 6 items",
+    "macro_validity": "mean over the arm's 6 items of (n_valid / n_candidate_lines), 0-candidate items counted as rate 0",
+    "appropriateness": "fraction of scored items passing D20 (early: ADD frac >= 0.5; late: REPLACE+REMOVE frac >= 0.3; mid excluded)"
+  },
+  "arms": {
+    "position_only": {
+      "n_items": 6,
+      "micro_validity": 1.0,
+      "macro_validity": 1.0,
+      "appropriateness_rate": 0.75,
+      "n_appropriateness_scored": 4,
+      "op_fracs_by_k": {
+        "1": {
+          "add": 0.714,
+          "replace": 0.286,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 14
+        },
+        "2": {
+          "add": 0.25,
+          "replace": 0.5,
+          "remove": 0.0,
+          "no_change": 0.25,
+          "n_ops": 4
+        },
+        "3": {
+          "add": 0.2,
+          "replace": 0.8,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 5
+        },
+        "4": {
+          "add": 0.2,
+          "replace": 0.8,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 5
+        },
+        "5": {
+          "add": 0.125,
+          "replace": 0.875,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 8
+        },
+        "6": {
+          "add": 0.083,
+          "replace": 0.833,
+          "remove": 0.0,
+          "no_change": 0.083,
+          "n_ops": 12
+        }
+      },
+      "validity_by_k": {
+        "1": "14/14",
+        "2": "4/4",
+        "3": "5/5",
+        "4": "5/5",
+        "5": "8/8",
+        "6": "12/12"
+      }
+    },
+    "position_rubric": {
+      "n_items": 6,
+      "micro_validity": 1.0,
+      "macro_validity": 1.0,
+      "appropriateness_rate": 1.0,
+      "n_appropriateness_scored": 4,
+      "op_fracs_by_k": {
+        "1": {
+          "add": 1.0,
+          "replace": 0.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 4
+        },
+        "2": {
+          "add": 1.0,
+          "replace": 0.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 3
+        },
+        "3": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 3
+        },
+        "4": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 12
+        },
+        "5": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 9
+        },
+        "6": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 6
+        }
+      },
+      "validity_by_k": {
+        "1": "4/4",
+        "2": "3/3",
+        "3": "3/3",
+        "4": "12/12",
+        "5": "9/9",
+        "6": "6/6"
+      }
+    },
+    "position_rubric_confidence": {
+      "n_items": 6,
+      "micro_validity": 1.0,
+      "macro_validity": 1.0,
+      "appropriateness_rate": 1.0,
+      "n_appropriateness_scored": 4,
+      "op_fracs_by_k": {
+        "1": {
+          "add": 1.0,
+          "replace": 0.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 4
+        },
+        "2": {
+          "add": 1.0,
+          "replace": 0.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 3
+        },
+        "3": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 2
+        },
+        "4": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 2
+        },
+        "5": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 9
+        },
+        "6": {
+          "add": 0.0,
+          "replace": 1.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 5
+        }
+      },
+      "validity_by_k": {
+        "1": "4/4",
+        "2": "3/3",
+        "3": "2/2",
+        "4": "2/2",
+        "5": "9/9",
+        "6": "5/5"
+      },
+      "confidence_by_k": {
+        "1": 0.6,
+        "2": 0.6,
+        "3": 0.85,
+        "4": 0.95,
+        "5": null,
+        "6": null
+      },
+      "n_confidence_emitted": 4,
+      "confidence_validity_pearson_r": null
+    }
+  }
+}

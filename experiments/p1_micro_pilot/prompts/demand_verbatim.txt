@@ -1,0 +1,1 @@
+Integrate precise VERBATIM specifics from this view into the state: exact figures, dollar amounts, dates, named entities, statutory references, and direct phrasing, placed where they belong via REPLACE (preferred) and ADD. Correct or REMOVE anything the verbatim detail contradicts. Keep the state within about {state_tokens} tokens.

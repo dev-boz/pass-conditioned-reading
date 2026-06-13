@@ -1,0 +1,449 @@
+{
+ "doc_id": "govreport-00055",
+ "K": 6,
+ "config_hash": "e33c1f27858db9a5",
+ "snapshots": [
+  {
+   "entries": [],
+   "next": 1
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Placeholder for problems identified."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Placeholder for recommendations."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and Regulators: $5.2 billion assessed, $5.1 billion collected."
+    },
+    {
+     "id": "S11",
+     "text": "SEC: $9.4 million of $16 million assessed."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC: $301 million in penalties."
+    }
+   ],
+   "next": 13
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions assessed $12 billion in fines, penalties, and forfeitures for BSA/AML, FCPA, and U.S. sanctions program requirements."
+    },
+    {
+     "id": "S16",
+     "text": "Problems Identified: Financial institutions assessed $12 billion in fines, penalties, and forfeitures for BSA/AML, FCPA, and U.S. sanctions program requirements."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S17",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Placeholder for recommendations."
+    },
+    {
+     "id": "S18",
+     "text": "Recommendations: Placeholder for recommendations."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and Regulators: $5.2 billion assessed, $5.1 billion collected."
+    },
+    {
+     "id": "S11",
+     "text": "SEC: $9.4 million of $16 million assessed."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC: $301 million in penalties."
+    },
+    {
+     "id": "S13",
+     "text": "Problems Identified: Placeholder for problems identified."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: Placeholder for recommendations."
+    }
+   ],
+   "next": 19
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions assessed $12 billion in fines, penalties, and forfeitures for BSA/AML, FCPA, and U.S. sanctions program requirements."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: The report highlights significant financial penalties and forfeitures totaling $12 billion for BSA/AML, FCPA, and U.S. sanctions program violations. Agencies like FinCEN and financial regulators deposit these penalties into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency in the collection and distribution of funds."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and Regulators: $5.2 billion assessed, $5.1 billion collected."
+    },
+    {
+     "id": "S11",
+     "text": "SEC: $9.4 million of $16 million assessed."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC: $301 million in penalties."
+    },
+    {
+     "id": "S13",
+     "text": "Problems Identified: Financial institutions face substantial fines and penalties for BSA/AML, FCPA, and U.S. sanctions program violations, totaling $12 billion."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: The report identifies significant financial penalties and forfeitures for BSA/AML, FCPA, and U.S. sanctions program violations, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: The report suggests improving compliance and tracking mechanisms to enhance transparency and efficiency in managing penalty payments."
+    },
+    {
+     "id": "S19",
+     "text": "Asset forfeiture processes for both the Justice Asset Forfeiture Program and the Treasury Forfeiture Program involve seizing assets and transferring them to respective funds, ensuring transparency and efficiency in the collection and distribution of funds."
+    },
+    {
+     "id": "S20",
+     "text": "Agencies like FinCEN and financial regulators deposit penalty payments into Treasury's General Fund accounts, with the Treasury Office of Management overseeing the receipt of these funds."
+    },
+    {
+     "id": "S21",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency in the collection and distribution of funds."
+    }
+   ],
+   "next": 22
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions faced significant penalties and forfeitures totaling $12 billion for BSA/AML, FCPA, and U.S. sanctions program violations from 2009 to 2015."
+    },
+    {
+     "id": "S3",
+     "text": "The report highlights substantial financial penalties and forfeitures, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S4",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies including Treasury, DOJ, and federal banking regulators were involved."
+    },
+    {
+     "id": "S6",
+     "text": "$12 billion in fines, penalties, and forfeitures were assessed."
+    },
+    {
+     "id": "S7",
+     "text": "$5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "$27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "$6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and regulators assessed $5.2 billion, collected $5.1 billion."
+    },
+    {
+     "id": "S11",
+     "text": "SEC assessed $9.4 million of $16 million, collected $9.4 million."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC assessed $301 million in penalties."
+    },
+    {
+     "id": "S13",
+     "text": "Financial institutions faced substantial fines and penalties for BSA/AML, FCPA, and U.S. sanctions program violations, totaling $12 billion."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: The report identifies significant financial penalties and forfeitures for BSA/AML, FCPA, and U.S. sanctions program violations, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: The report suggests improving compliance and tracking mechanisms to enhance transparency and efficiency in managing penalty payments."
+    },
+    {
+     "id": "S19",
+     "text": "Asset forfeiture processes for both the Justice Asset Forfeiture Program and the Treasury Forfeiture Program involve seizing assets and transferring them to respective funds, ensuring transparency and efficiency in the collection and distribution of funds."
+    },
+    {
+     "id": "S20",
+     "text": "Agencies like FinCEN and financial regulators deposit penalty payments into Treasury's General Fund accounts, with the Treasury Office of Management overseeing the receipt of these funds."
+    },
+    {
+     "id": "S21",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency in the collection and distribution of funds."
+    }
+   ],
+   "next": 22
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions faced significant penalties and forfeitures totaling $12 billion for BSA/AML, FCPA, and U.S. sanctions program violations from January 2009 to December 2015."
+    },
+    {
+     "id": "S3",
+     "text": "The report highlights substantial financial penalties and forfeitures, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts, as per the data analyzed from January 2009 to December 2015."
+    },
+    {
+     "id": "S4",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency, as per the data analyzed from January 2009 to December 2015."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies including Treasury, DOJ, and federal banking regulators were involved in enforcement actions from January 2009 to December 2015."
+    },
+    {
+     "id": "S6",
+     "text": "$12 billion in fines, penalties, and forfeitures were assessed from January 2009 to December 2015."
+    },
+    {
+     "id": "S7",
+     "text": "$5.2 billion in BSA violations from January 2009 to December 2015."
+    },
+    {
+     "id": "S8",
+     "text": "$27 million in FCPA violations from January 2009 to December 2015."
+    },
+    {
+     "id": "S9",
+     "text": "$6.8 billion in U.S. sanctions program violations from January 2009 to December 2015."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and regulators assessed $5.2 billion, collected $5.1 billion from January 2009 to December 2015."
+    },
+    {
+     "id": "S11",
+     "text": "SEC assessed $9.4 million of $16 million, collected $9.4 million from January 2009 to December 2015."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC assessed $301 million in penalties from January 2009 to December 2015."
+    },
+    {
+     "id": "S13",
+     "text": "Financial institutions faced substantial fines and penalties for BSA/AML, FCPA, and U.S. sanctions program violations, totaling $12 billion from January 2009 to December 2015."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: The report identifies significant financial penalties and forfeitures for BSA/AML, FCPA, and U.S. sanctions program violations, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: The report suggests improving compliance and tracking mechanisms to enhance transparency and efficiency in managing penalty payments."
+    },
+    {
+     "id": "S19",
+     "text": "Asset forfeiture processes for both the Justice Asset Forfeiture Program and the Treasury Forfeiture Program involve seizing assets and transferring them to respective funds, ensuring transparency and efficiency in the collection and distribution of funds."
+    },
+    {
+     "id": "S20",
+     "text": "Agencies like FinCEN and financial regulators deposit penalty payments into Treasury's General Fund accounts, with the Treasury Office of Management overseeing the receipt of these funds."
+    },
+    {
+     "id": "S21",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency in the collection and distribution of funds."
+    }
+   ],
+   "next": 22
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S3",
+     "text": "The report highlights substantial financial penalties and forfeitures, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts, as per the data analyzed from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S4",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency, as per the data analyzed from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies including Treasury, DOJ, and federal banking regulators were involved in enforcement actions from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S6",
+     "text": "$301 million in fines, penalties, and forfeitures were assessed from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S7",
+     "text": "$5.2 billion in BSA violations from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and their value."
+    },
+    {
+     "id": "S8",
+     "text": "$27 million in FCPA violations from January 2009 to December 2015. OFAC has collected about $299 million of the $301 million (see fig. 3). OFAC\u2019s enforcement guidelines provide the legal framework for analyzing apparent violations. Some of the factors which determine the size of a civil money penalty include the sanctions program at issue and the number of apparent violations and"
+    },
+    {
+     "id": "S9",
+     "text": "$6.8 billion in U.S. sanctions program violations from January 2009 to December 2015."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and regulators assessed $5.2 billion, collected $5.1 billion from January 2009 to December 2015."
+    },
+    {
+     "id": "S11",
+     "text": "SEC assessed $9.4 million of $16 million, collected $9.4 million from January 2009 to December 2015."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC assessed $301 million in penalties from January 2009 to December 2015."
+    },
+    {
+     "id": "S13",
+     "text": "Financial institutions faced substantial fines and penalties for BSA/AML, FCPA, and U.S. sanctions program violations, totaling $12 billion from January 2009 to December 2015."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: The report identifies significant financial penalties and forfeitures for BSA/AML, FCPA, and U.S. sanctions program violations, with agencies like FinCEN and financial regulators depositing these funds into Treasury's General Fund accounts."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: The report suggests improving compliance and tracking mechanisms to enhance transparency and efficiency in managing penalty payments."
+    },
+    {
+     "id": "S19",
+     "text": "Asset forfeiture processes for both the Justice Asset Forfeiture Program and the Treasury Forfeiture Program involve seizing assets and transferring them to respective funds, ensuring transparency and efficiency in the collection and distribution of funds."
+    },
+    {
+     "id": "S20",
+     "text": "Agencies like FinCEN and financial regulators deposit penalty payments into Treasury's General Fund accounts, with the Treasury Office of Management overseeing the receipt of these funds."
+    },
+    {
+     "id": "S21",
+     "text": "The report recommends enhancing compliance measures and improving the tracking and management of penalty payments to ensure transparency and efficiency in the collection and distribution of funds."
+    }
+   ],
+   "next": 22
+  }
+ ]
+}

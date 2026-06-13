@@ -1,0 +1,51 @@
+# P3 — prompt-rubric pilot. Reuses the P1 harness, document, and the P1
+# coupled-arm reference states (parser v2); same K=6 schedule, temp 0, seed 42.
+# Rubric wording and confidence-line format: DECISIONS.md D23.
+# All arms receive the identical items; only the prompt manipulation varies.
+
+p1_dir: ../p1_micro_pilot
+states_file: ../p1_micro_pilot/transcripts/coupled_states.json
+seed: 42
+
+model:
+  server_exe: ../../models/llamacpp/llama-server.exe
+  model_path: ../../models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+  ctx: 12288
+  port: 8087
+  threads: 8
+  max_tokens: 700
+  temperature: 0.0
+
+arms:
+  position_only: {rubric: false, confidence: false}   # (a) P2's with-position condition, rerun for comparison
+  position_rubric: {rubric: true, confidence: false}  # (b) + per-pass behavioral rubric
+  position_rubric_confidence: {rubric: true, confidence: true}  # (c) + confidence line
+
+# Per-pass rubric, keyed by the D13 stage of each pass (K=6: 1-2 scaffold,
+# 3-4 concrete, 5-6 verbatim).
+rubrics:
+  scaffold: |
+    RUBRIC FOR THIS PASS: This is an early pass over a heavily compressed view.
+    Build scaffold structure only — short headings or one-line placeholders via ADD.
+    Do not integrate specific facts or figures yet.
+  concrete: |
+    RUBRIC FOR THIS PASS: This is a middle pass. Integrate this view's substantive
+    content into the existing structure — prefer REPLACE of placeholders over new ADDs.
+    Keep detail abstract; do not chase exact figures or quotations yet.
+  verbatim: |
+    RUBRIC FOR THIS PASS: This is a late, near-verbatim pass. Make verbatim
+    corrections — exact figures, names, dates, references. Prefer REPLACE and REMOVE;
+    ADD only if something essential is missing. NO_CHANGE is allowed if the state
+    already reflects this view.
+
+confidence_instruction: |
+  After your operations, end your response with exactly one final line:
+  confidence: X.X
+  where X.X is your 0.0-1.0 estimate that the state, after your edits, adequately
+  serves the task.
+
+appropriateness:        # identical to P2 (D20)
+  early_max_t: 0.3333
+  late_min_t: 0.6667
+  early_add_frac_min: 0.5
+  late_edit_frac_min: 0.3

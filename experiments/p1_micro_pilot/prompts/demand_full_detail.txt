@@ -1,0 +1,1 @@
+Produce the most complete, detailed integration of this view's content into the state that you can: full substantive coverage including exact figures, dates, names, and references where the view provides them. Full detail is expected at every pass of this schedule. Use any operations needed. Keep the state within about {state_tokens} tokens.

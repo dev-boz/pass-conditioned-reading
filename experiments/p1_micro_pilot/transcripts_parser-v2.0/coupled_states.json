@@ -1,0 +1,329 @@
+{
+ "doc_id": "govreport-00055",
+ "K": 6,
+ "config_hash": "e33c1f27858db9a5",
+ "snapshots": [
+  {
+   "entries": [],
+   "next": 1
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Placeholder for problems identified."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Placeholder for recommendations."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and Regulators: $5.2 billion assessed, $5.1 billion collected."
+    },
+    {
+     "id": "S11",
+     "text": "SEC: $9.4 million of $16 million assessed."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC: $301 million in penalties."
+    }
+   ],
+   "next": 13
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions face significant penalties for BSA/AML, FCPA, and U.S. sanctions program violations."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: BSA violations: $5.2 billion, FCPA violations: $27 million, U.S. sanctions program violations: $6.8 billion."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Suggestions for reducing penalties and improving compliance."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S10",
+     "text": "DOJ, FinCEN, and Regulators: $5.2 billion assessed, $5.1 billion collected."
+    },
+    {
+     "id": "S11",
+     "text": "SEC: $9.4 million of $16 million assessed."
+    },
+    {
+     "id": "S12",
+     "text": "OFAC: $301 million in penalties."
+    },
+    {
+     "id": "S13",
+     "text": "Problems Identified: Placeholder for problems identified."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: Placeholder for key findings with supporting figures."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: Placeholder for recommendations."
+    }
+   ],
+   "next": 16
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions face significant penalties for regulatory violations, impacting their financial health and compliance efforts."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: BSA violations: $5.2 billion, FCPA violations: $27 million, U.S. sanctions program violations: $6.8 billion."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Suggestions for reducing penalties and improving compliance."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Fines, Penalties, and Forfeitures: $12 billion in fines, penalties, and forfeitures."
+    },
+    {
+     "id": "S7",
+     "text": "BSA Violations: $5.2 billion in BSA violations."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA Violations: $27 million in FCPA violations."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. Sanctions Program Violations: $6.8 billion in U.S. sanctions program violations."
+    },
+    {
+     "id": "S13",
+     "text": "Problems Identified: The source details how financial institutions face significant penalties for BSA/AML, FCPA, and U.S. sanctions program violations, impacting their financial health and compliance efforts."
+    },
+    {
+     "id": "S14",
+     "text": "Key Findings: The key findings include $5.2 billion in BSA violations, $27 million in FCPA violations, and $6.8 billion in U.S. sanctions program violations, highlighting the substantial financial impact on financial institutions."
+    },
+    {
+     "id": "S15",
+     "text": "Recommendations: The recommendations suggest strategies for reducing penalties and improving compliance, focusing on better regulatory oversight and financial institution preparedness."
+    }
+   ],
+   "next": 19
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions face substantial penalties for BSA, FCPA, and sanctions program violations, impacting their financial health and compliance efforts."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: BSA violations: $1.4 billion, FCPA violations: $10.3 million, U.S. sanctions program violations: $301 million."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Strategies for reducing penalties and improving compliance, including better regulatory oversight and financial institution preparedness."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Penalties, fines, and forfeitures: Total of $12 billion, with significant contributions from BSA, FCPA, and sanctions program violations."
+    },
+    {
+     "id": "S7",
+     "text": "BSA violations: Significant penalties assessed by financial regulators, totaling $1.4 billion, with $651 million assessed concurrently with FinCEN to 13 institutions."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA violations: SEC assessed $10.3 million in penalties and $13.6 million in disgorgements from two financial institutions."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. sanctions program violations: OFAC assessed $301 million in penalties against financial institutions, with $299 million collected."
+    },
+    {
+     "id": "S19",
+     "text": "Financial regulators, including DOJ, FinCEN, and federal banking regulators, assessed and collected significant penalties, fines, and forfeitures for BSA, FCPA, and sanctions program violations, impacting financial institutions' financial health and compliance efforts."
+    }
+   ],
+   "next": 20
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions face substantial penalties for BSA/AML, FCPA, and sanctions program violations, impacting their financial health and compliance efforts. Specifically, we analyzed publicly available data from January 2009 through December 2015 on penalties assessed against financial institutions by the Federal Reserve, FDIC, OCC, SEC, and the Financial Crimes Enforcement Network (FinCEN), a bureau within Treasury, for violations of BSA/AML requirements. NCUA officials we spoke with explained that they had not assessed any penalties against financial institutions for violations of BSA/AML requirements from January 2009 through December 2015. FDIC and SEC provided us with a list of enforcement actions they took for BSA/AML violations since 2009, as we were not able to identify all of their actions through their publicly available data. We also reviewed Federal Reserve data on penalties for violations of U.S. sanctions programs requirements and data that SEC provided on FCPA violations. In addition, we reviewed enforcement actions listed on Treasury\u2019s Office of Foreign Assets Control (OFAC) website to identify penalties assessed against financial institutions for violations of U.S. sanctions programs requirements enforced by OFAC. To identify enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website, we applied Treasury\u2019s definition of financial institutions, which covers regulated entities in the financial industry. To identify criminal cases against financial institutions for violations of BSA and sanctions-related requirements, we reviewed press releases from DOJ\u2019s Asset Forfeiture and Money Laundering Section, associated court documents, and enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website (see table 3 for a list of these cases). We obtained data from DOJ\u2019s Consolidated Asset Tracking System to determine the amounts forfeited for these cases, and verified any Treasury-related data in DOJ\u2019s system by obtaining information from the Treasury Executive Office for Asset Forfeiture. DOJ had not brought any criminal cases against financial institutions for violations of FCPA. We assessed the reliability of the data we used in this report by reviewing prior GAO assessments of these data, interviewing knowledgeable agency officials, and reviewing relevant documentation, such as agency enforcement orders for the assessments. We also assessed the reliability of the DOJ data fields we reported on by reviewing prior GAO and DOJ evaluations of these data and interviewing knowledgeable officials from DOJ."
+    },
+    {
+     "id": "S3",
+     "text": "BSA violations: $1.4 billion, FCPA violations: $10.3 million, U.S. sanctions program violations: $301 million."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Strategies for reducing penalties and improving compliance, including better regulatory oversight and financial institution preparedness."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Penalties, fines, and forfeitures: Total of $12 billion, with significant contributions from BSA, FCPA, and sanctions program violations."
+    },
+    {
+     "id": "S7",
+     "text": "BSA violations: Significant penalties assessed by financial regulators, totaling $1.4 billion, with $651 million assessed concurrently with FinCEN to 13 institutions."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA violations: SEC assessed $10.3 million in penalties and $13.6 million in disgorgements from two financial institutions."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. sanctions program violations: OFAC assessed $301 million in penalties against financial institutions, with $299 million collected."
+    },
+    {
+     "id": "S19",
+     "text": "Financial regulators, including DOJ, FinCEN, and federal banking regulators, assessed and"
+    }
+   ],
+   "next": 20
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions face substantial penalties for BSA/AML, FCPA, and sanctions program violations, impacting their financial health and compliance efforts. Specifically, we analyzed publicly available data from January 2009 through December 2015 on penalties assessed against financial institutions by the Federal Reserve, FDIC, OCC, SEC, and the Financial Crimes Enforcement Network (FinCEN), a bureau within Treasury, for violations of BSA/AML requirements. NCUA officials we spoke with explained that they had not assessed any penalties against financial institutions for violations of BSA/AML requirements from January 2009 through December 2015. FDIC and SEC provided us with a list of enforcement actions they took for BSA/AML violations since 2009, as we were not able to identify all of their actions through their publicly available data. We also reviewed Federal Reserve data on penalties for violations of U.S. sanctions programs requirements and data that SEC provided on FCPA violations. In addition, we reviewed enforcement actions listed on Treasury\u2019s Office of Foreign Assets Control (OFAC) website to identify penalties assessed against financial institutions for violations of U.S. sanctions programs requirements enforced by OFAC. To identify enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website, we applied Treasury\u2019s definition of financial institutions, which covers regulated entities in the financial industry. To identify criminal cases against financial institutions for violations of BSA and sanctions-related requirements, we reviewed press releases from DOJ\u2019s Asset Forfeiture and Money Laundering Section, associated court documents, and enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website (see table 3 for a list of these cases). We obtained data from DOJ\u2019s Consolidated Asset Tracking System to determine the amounts forfeited for these cases, and verified any Treasury-related data in DOJ\u2019s system by obtaining information from the Treasury Executive Office for Asset Forfeiture. DOJ had not brought any criminal cases against financial institutions for violations of FCPA. We assessed the reliability of the data we used in this report by reviewing prior GAO assessments of these data, interviewing knowledgeable agency officials, and reviewing relevant documentation, such as agency enforcement orders for the assessments. We also assessed the reliability of the DOJ data fields we reported on by reviewing prior GAO and DOJ evaluations of these data and interviewing knowledgeable officials from DOJ."
+    },
+    {
+     "id": "S3",
+     "text": "BSA violations: $1.4 billion, FCPA violations: $10.3 million, U.S. sanctions program violations: $301 million collected by OFAC."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations: Strategies for reducing penalties and improving compliance, including better regulatory oversight and financial institution preparedness."
+    },
+    {
+     "id": "S5",
+     "text": "Agencies: Treasury, DOJ, and federal banking regulators."
+    },
+    {
+     "id": "S6",
+     "text": "Penalties, fines, and forfeitures: Total of $12 billion, with significant contributions from BSA, FCPA, and sanctions program violations, including $301 million collected by OFAC from U.S. sanctions program violations (see fig. 3)."
+    },
+    {
+     "id": "S7",
+     "text": "BSA violations: Significant penalties assessed by financial regulators, totaling $1.4 billion, with $651 million assessed concurrently with FinCEN to 13 institutions."
+    },
+    {
+     "id": "S8",
+     "text": "FCPA violations: SEC assessed $10.3 million in penalties and $13.6 million in disgorgements from two financial institutions."
+    },
+    {
+     "id": "S9",
+     "text": "U.S. sanctions program violations: OFAC assessed $301 million in penalties against financial institutions, with $299 million collected."
+    },
+    {
+     "id": "S19",
+     "text": "Financial regulators, including DOJ, FinCEN, and federal banking regulators, assessed and"
+    },
+    {
+     "id": "S20",
+     "text": "The Federal Reserve assessed its largest penalty for $508 million against BNP Paribas for having unsafe and unsound practices that failed to prevent the concealing of payment information of financial institutions subject to OFAC regulations. It was assessed as part of a global settlement with DOJ for concealing payment information of a financial institution subject to OFAC regulations."
+    },
+    {
+     "id": "S21",
+     "text": "Federal Reserve officials stated that the remaining assessed penalties related to OFAC regulations were largely for similar unsafe and unsound practices."
+    },
+    {
+     "id": "S22",
+     "text": "FinCEN and financial regulators have processes in place for receiving penalty payments from financial institutions\u2014including for penalties assessed for the covered violations\u2014and for depositing these payments."
+    }
+   ],
+   "next": 23
+  }
+ ]
+}

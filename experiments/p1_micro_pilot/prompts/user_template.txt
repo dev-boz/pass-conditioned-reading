@@ -1,0 +1,14 @@
+TASK: {task}
+
+SCHEDULE POSITION: pass {k} of {K}
+
+CURRENT INTEGRATION STATE:
+{state}
+
+VIEW OF THE SOURCE (this pass):
+{view}
+
+OUTPUT DEMAND FOR THIS PASS:
+{demand}
+
+Respond with edit operations only.

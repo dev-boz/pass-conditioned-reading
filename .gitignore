@@ -1,0 +1,6 @@
+.venv/
+models/
+__pycache__/
+*.pyc
+data/corpus/corpus.jsonl
+data/views/views.jsonl

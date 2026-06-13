@@ -1,0 +1,22 @@
+# View-generation config — E0 dataset. Every value here is a schedule decision;
+# derivations in docs/DECISIONS.md.
+corpus:
+  dataset: ccdv/govreport-summarization   # GovReport; justification in E0 RESULTS.md
+  split: train
+  text_field: report
+  n_docs: 300
+  min_doc_tokens: 8192    # ensures pass-1 compression ratio >= 16x at V=512
+  max_doc_tokens: 24000   # caps CPU cost per doc
+  scan_limit: 4000        # stop scanning the stream after this many candidates
+  seed: 42
+
+schedule:
+  K: 8          # K >= 6 per brief; ~1 pass per ~1-3K source tokens at this doc length
+  V: 512        # per-view token budget (constant; window invariant, parent §4)
+
+compressor: extractive   # PRODUCTION IS LLM SUMMARIZATION — this is the stand-in;
+                         # results are E0-provisional until regenerated with `llm`.
+
+outputs:
+  corpus_path: data/corpus/corpus.jsonl
+  views_path: data/views/views.jsonl

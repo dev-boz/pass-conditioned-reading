@@ -1,0 +1,45 @@
+# P1 — prompt-level micro-pilot. Three hand-built schedules, one document,
+# off-the-shelf 7B instruct model, no training. Declarative; run.py executes.
+# Parameter derivations: docs/DECISIONS.md D11–D18.
+
+doc_id: govreport-00055          # 8,456 tokens; BSA/AML GAO report (corpus.jsonl)
+task: >
+  Produce a comprehensive analytical brief of this report: its scope, the
+  problems it identifies, its key findings with supporting figures, and its
+  recommendations.
+
+K: 6
+V: 512                            # staged-view token budget per pass (D4 ladder)
+seed: 42
+
+model:
+  server_exe: ../../models/llamacpp/llama-server.exe
+  model_path: ../../models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+  ctx: 12288
+  port: 8087
+  threads: 8
+  max_tokens: 700                 # edit budget, D18
+  temperature: 0.0
+
+budgets:
+  scaffold_B_s: 600               # D14
+  state_tokens: 1800              # D16 (warn, don't truncate)
+  max_ops_per_pass: 12            # D18
+
+# Output-detail ladder (D13): stage per pass for staged-output arms.
+stages_by_pass: [scaffold, scaffold, concrete, concrete, verbatim, verbatim]
+
+arms:
+  coupled:                        # staged views + staged output demands
+    views: staged
+    demands: staged
+  input_staged_only:              # same view progression, full detail demanded every pass
+    views: staged
+    demands: full_detail
+  output_staged_only:             # full-resolution view every pass, staged demands
+    views: full
+    demands: staged
+
+judge:                            # optional LLM-judge scorer — stubbed, ships DISABLED
+  enabled: false
+  note: see judge_stub.py

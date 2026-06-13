@@ -1,0 +1,1 @@
+Build or extend a structural SCAFFOLD of the final brief: short section headings and one-line placeholders that capture the document's overall organization and the kinds of content each section will hold. Do not write detailed content yet. Use ADD operations. Keep the entire state within about {scaffold_B_s} tokens.

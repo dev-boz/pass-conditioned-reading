@@ -1,0 +1,229 @@
+{
+ "doc_id": "govreport-00055",
+ "K": 6,
+ "config_hash": "e33c1f27858db9a5",
+ "snapshots": [
+  {
+   "entries": [],
+   "next": 1
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Summary of issues and challenges in compliance."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S4",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Recommendations: Suggestions for improvement."
+    }
+   ],
+   "next": 6
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Summary of issues and challenges in compliance."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S4",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Recommendations: Suggestions for improvement."
+    },
+    {
+     "id": "S6",
+     "text": "Scope: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S7",
+     "text": "Problems Identified: Summary of issues and challenges in compliance."
+    },
+    {
+     "id": "S8",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S9",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S10",
+     "text": "Recommendations: Suggestions for improvement."
+    }
+   ],
+   "next": 11
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Summary of issues and challenges in compliance."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S4",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Recommendations: Suggestions for improvement."
+    },
+    {
+     "id": "S8",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S9",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S10",
+     "text": "Recommendations: Suggestions for improvement."
+    }
+   ],
+   "next": 11
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "BSA/AML: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified: Financial institutions face challenges in complying with BSA/AML, FCPA, and sanctions programs. Issues include inadequate internal controls, failure to report suspicious activity, and non-compliance with recordkeeping and reporting requirements."
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings: The report highlights the significant fines, penalties, and forfeitures assessed against financial institutions for BSA/AML, FCPA, and sanctions program violations. Financial institutions have faced substantial financial penalties, with BSA/AML violations being the most common."
+    },
+    {
+     "id": "S4",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Recommendations: Suggestions for improvement."
+    },
+    {
+     "id": "S8",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S9",
+     "text": "Supporting Figures: References to charts, tables, and graphs."
+    },
+    {
+     "id": "S10",
+     "text": "Recommendations: Suggestions for improvement."
+    }
+   ],
+   "next": 11
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "BSA/AML: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions face challenges in complying with BSA/AML, FCPA, and sanctions programs. Issues include inadequate internal controls, failure to report suspicious activity, and non-compliance with recordkeeping and reporting requirements."
+    },
+    {
+     "id": "S3",
+     "text": "The report highlights the significant fines, penalties, and forfeitures assessed against financial institutions for BSA/AML, FCPA, and sanctions program violations. Financial institutions have faced substantial financial penalties, with BSA/AML violations being the most common. From January 2009 through December 2015, financial institutions have been assessed about $12 billion in fines, penalties, and forfeitures for violations of BSA/AML, FCPA, and U.S. sanctions program requirements. Specifically, from January 2009 through December 2015, federal agencies assessed about $5.2 billion for BSA violations, $27 million for FCPA violations, and about $6.8 billion for violations of U.S. sanctions program requirements."
+    },
+    {
+     "id": "S4",
+     "text": "References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Suggestions for improvement."
+    },
+    {
+     "id": "S8",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S9",
+     "text": "References to charts, tables, and graphs."
+    },
+    {
+     "id": "S10",
+     "text": "Suggestions for improvement."
+    }
+   ],
+   "next": 11
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "BSA/AML: Overview of BSA/AML, FCPA, and sanctions programs requirements and their evolution."
+    },
+    {
+     "id": "S2",
+     "text": "Financial institutions face challenges in complying with BSA/AML, FCPA, and sanctions programs. Issues include inadequate internal controls, failure to report suspicious activity, and non-compliance with recordkeeping and reporting requirements."
+    },
+    {
+     "id": "S3",
+     "text": "The report highlights the significant fines, penalties, and forfeitures assessed against financial institutions for BSA/AML, FCPA, and sanctions program violations. Financial institutions have faced substantial financial penalties, with BSA/AML violations being the most common. From January 2009 through December 2015, financial institutions have been assessed about $12 billion in fines, penalties, and forfeitures for violations of BSA/AML, FCPA, and U.S. sanctions program requirements. Specifically, from January 2009 through December 2015, federal agencies assessed about $5.2 billion for BSA violations, $27 million for FCPA violations, and about $6.8 billion for violations of U.S. sanctions program requirements."
+    },
+    {
+     "id": "S4",
+     "text": "References to charts, tables, and graphs."
+    },
+    {
+     "id": "S5",
+     "text": "Suggestions for improvement."
+    },
+    {
+     "id": "S8",
+     "text": "Key Findings: Major insights from the report."
+    },
+    {
+     "id": "S9",
+     "text": "References to charts, tables, and graphs."
+    },
+    {
+     "id": "S10",
+     "text": "Suggestions for improvement."
+    }
+   ],
+   "next": 11
+  }
+ ]
+}

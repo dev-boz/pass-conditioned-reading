@@ -1,0 +1,107 @@
+{
+  "config_hash": "d6e22cb7380df28d",
+  "doc_id": "govreport-00055",
+  "K": 6,
+  "conditions": {
+    "with_position": {
+      "n_items": 6,
+      "mean_validity_rate": 0.9791666666666666,
+      "appropriateness_rate": 0.75,
+      "n_appropriateness_scored": 4,
+      "op_fracs_by_k": {
+        "1": {
+          "add": 0.667,
+          "replace": 0.333,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 9
+        },
+        "2": {
+          "add": 0.091,
+          "replace": 0.182,
+          "remove": 0.727,
+          "no_change": 0.0,
+          "n_ops": 11
+        },
+        "3": {
+          "add": 0.667,
+          "replace": 0.333,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 3
+        },
+        "4": {
+          "add": 0.2,
+          "replace": 0.8,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 5
+        },
+        "5": {
+          "add": 0.143,
+          "replace": 0.857,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 7
+        },
+        "6": {
+          "add": 0.25,
+          "replace": 0.75,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 8
+        }
+      }
+    },
+    "no_position": {
+      "n_items": 6,
+      "mean_validity_rate": 0.9833333333333334,
+      "appropriateness_rate": 1.0,
+      "n_appropriateness_scored": 4,
+      "op_fracs_by_k": {
+        "1": {
+          "add": 1.0,
+          "replace": 0.0,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 13
+        },
+        "2": {
+          "add": 0.5,
+          "replace": 0.333,
+          "remove": 0.167,
+          "no_change": 0.0,
+          "n_ops": 6
+        },
+        "3": {
+          "add": 0.125,
+          "replace": 0.75,
+          "remove": 0.0,
+          "no_change": 0.125,
+          "n_ops": 8
+        },
+        "4": {
+          "add": 0.25,
+          "replace": 0.75,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 4
+        },
+        "5": {
+          "add": 0.111,
+          "replace": 0.889,
+          "remove": 0.0,
+          "no_change": 0.0,
+          "n_ops": 9
+        },
+        "6": {
+          "add": 0.125,
+          "replace": 0.75,
+          "remove": 0.0,
+          "no_change": 0.125,
+          "n_ops": 8
+        }
+      }
+    }
+  }
+}

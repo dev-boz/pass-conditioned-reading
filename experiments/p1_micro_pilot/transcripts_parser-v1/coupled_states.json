@@ -1,0 +1,137 @@
+{
+ "doc_id": "govreport-00055",
+ "K": 6,
+ "config_hash": "e33c1f27858db9a5",
+ "snapshots": [
+  {
+   "entries": [],
+   "next": 1
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    }
+   ],
+   "next": 2
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "Problems Identified:"
+    },
+    {
+     "id": "S3",
+     "text": "Key Findings with Supporting Figures:"
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations:"
+    }
+   ],
+   "next": 5
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Scope: Overview of agencies involved in U.S. sanctions programs."
+    },
+    {
+     "id": "S2",
+     "text": "The report identifies issues with the handling of penalty funds, including general rescissions and deposits into Treasury's General Fund accounts. It also notes the processes for asset forfeiture in both the Justice and Treasury programs, highlighting similarities and differences."
+    },
+    {
+     "id": "S3",
+     "text": "Key findings include the general process of penalty collection and distribution, with FinCEN and financial regulators depositing funds into Treasury's General Fund. The report also details the asset forfeiture processes, noting the involvement of various agencies and the transfer of assets to the Treasury Forfeiture Fund."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations suggest improvements in transparency and accountability for penalty funds and asset forfeiture processes, emphasizing the need for clear documentation and standardized procedures across agencies."
+    }
+   ],
+   "next": 5
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Overview of agencies involved in U.S. sanctions programs, including DOJ, FinCEN, and federal financial regulators (Federal Reserve, FDIC, OCC, and SEC), and their roles in assessing and collecting penalties and forfeitures."
+    },
+    {
+     "id": "S2",
+     "text": "The report identifies issues with the handling of penalty funds, noting that financial regulators assessed and collected penalties for BSA violations, with FinCEN and financial regulators depositing funds into Treasury's General Fund. It also highlights the asset forfeiture processes, involving various agencies and the transfer of assets to the Treasury Forfeiture Fund."
+    },
+    {
+     "id": "S3",
+     "text": "Key findings include the general process of penalty collection and distribution, with financial regulators assessing and collecting penalties for BSA violations, and FinCEN depositing funds into Treasury's General Fund. The report details the asset forfeiture processes, noting the involvement of various agencies and the transfer of assets to the Treasury Forfeiture Fund."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations suggest improvements in transparency and accountability for penalty funds and asset forfeiture processes, emphasizing the need for clear documentation and standardized procedures across agencies."
+    },
+    {
+     "id": "S5",
+     "text": "From 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund. The report highlights the need for better transparency and accountability in these processes."
+    }
+   ],
+   "next": 6
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Overview of agencies involved in U.S. sanctions programs, including DOJ, FinCEN, and federal financial regulators (Federal Reserve, FDIC, OCC, and SEC), and their roles in assessing and collecting penalties and forfeitures. Specifically, from 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund."
+    },
+    {
+     "id": "S2",
+     "text": "The report identifies issues with the handling of penalty funds, noting that financial regulators assessed and collected penalties for BSA violations, with FinCEN and financial regulators depositing funds into Treasury's General Fund. It also highlights the asset forfeiture processes, involving various agencies and the transfer of assets to the Treasury Forfeiture Fund. To respond to our first objective, we identified and analyzed these agencies\u2019 data on enforcement actions taken against financial institutions that resulted in fines, penalties, or forfeitures for violations of BSA/AML, FCPA, and U.S. sanctions programs requirements. Specifically, we analyzed publicly available data from January 2009 through December 2015 on penalties assessed against financial institutions by the Federal Reserve, FDIC, OCC, SEC, and the Financial Crimes Enforcement Network (FinCEN), a bureau within Treasury, for violations of BSA/AML requirements. NCUA officials we spoke with explained that they had not assessed any penalties against financial institutions for violations of BSA/AML requirements from January 2009 through December 2015. FDIC and SEC provided us with a list of enforcement actions they took for BSA/AML violations since 2009, as we were not able to identify all of their actions through their publicly available data. We also reviewed Federal Reserve data on penalties for violations of U.S. sanctions programs requirements and data that SEC provided on FCPA violations. In addition, we reviewed enforcement actions listed on Treasury\u2019s Office of Foreign Assets Control (OFAC) website to identify penalties assessed against financial institutions for violations of U.S. sanctions programs requirements enforced by OFAC. To identify enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website, we applied Treasury\u2019s definition of financial institutions, which covers regulated entities in the financial industry. To identify criminal cases against financial institutions for violations of BSA and sanctions-related requirements, we reviewed press releases from DOJ\u2019s Asset Forfeiture and Money Laundering Section, associated court documents, and enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website (see table 3 for a list of these cases). We obtained data from DOJ\u2019s Consolidated Asset Tracking System to determine the amounts forfeited for these cases, and verified any Treasury-related data in DOJ\u2019s system by obtaining information from the Treasury Executive Office for Asset Forfeiture. DOJ had not brought any criminal cases against financial institutions for violations of FCPA."
+    },
+    {
+     "id": "S3",
+     "text": "Key findings include the general process of penalty collection and distribution, with financial regulators assessing and collecting penalties for BSA violations, and FinCEN depositing funds into Treasury's General Fund. The report details the asset forfeiture processes, noting the involvement of various agencies and the transfer of assets to the Treasury Forfeiture Fund. To respond to our first objective, we identified and analyzed these agencies\u2019 data on enforcement actions taken against financial institutions that resulted in fines, penalties,"
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations suggest improvements in transparency and accountability for penalty funds and asset forfeiture processes, emphasizing the need for clear documentation and standardized procedures across agencies."
+    },
+    {
+     "id": "S5",
+     "text": "From 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund. The report highlights the need for better transparency and accountability in these processes."
+    }
+   ],
+   "next": 6
+  },
+  {
+   "entries": [
+    {
+     "id": "S1",
+     "text": "Overview of agencies involved in U.S. sanctions programs, including DOJ, FinCEN, and federal financial regulators (Federal Reserve, FDIC, OCC, and SEC), and their roles in assessing and collecting penalties and forfeitures. Specifically, from 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund."
+    },
+    {
+     "id": "S2",
+     "text": "The report identifies issues with the handling of penalty funds, noting that financial regulators assessed and collected penalties for BSA violations, with FinCEN and financial regulators depositing funds into Treasury's General Fund. It also highlights the asset forfeiture processes, involving various agencies and the transfer of assets to the Treasury Forfeiture Fund. To respond to our first objective, we identified and analyzed these agencies\u2019 data on enforcement actions taken against financial institutions that resulted in fines, penalties, or forfeitures for violations of BSA/AML, FCPA, and U.S. sanctions programs requirements. Specifically, we analyzed publicly available data from January 2009 through December 2015 on penalties assessed against financial institutions by the Federal Reserve, FDIC, OCC, SEC, and the Financial Crimes Enforcement Network (FinCEN), a bureau within Treasury, for violations of BSA/AML requirements. NCUA officials we spoke with explained that they had not assessed any penalties against financial institutions for violations of BSA/AML requirements from January 2009 through December 2015. FDIC and SEC provided us with a list of enforcement actions they took for BSA/AML violations since 2009, as we were not able to identify all of their actions through their publicly available data. We also reviewed Federal Reserve data on penalties for violations of U.S. sanctions programs requirements and data that SEC provided on FCPA violations. In addition, we reviewed enforcement actions listed on Treasury\u2019s Office of Foreign Assets Control (OFAC) website to identify penalties assessed against financial institutions for violations of U.S. sanctions programs requirements enforced by OFAC. To identify enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website, we applied Treasury\u2019s definition of financial institutions, which covers regulated entities in the financial industry. To identify criminal cases against financial institutions for violations of BSA and sanctions-related requirements, we reviewed press releases from DOJ\u2019s Asset Forfeiture and Money Laundering Section, associated court documents, and enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website (see table 3 for a list of these cases). We obtained data from DOJ\u2019s Consolidated Asset Tracking System to determine the amounts forfeited for these cases, and verified any Treasury-related data in DOJ\u2019s system by obtaining information from the Treasury Executive Office for Asset Forfeiture. DOJ had not brought any criminal cases against financial institutions for violations of FCPA."
+    },
+    {
+     "id": "S3",
+     "text": "Key findings include the general process of penalty collection and distribution, with financial regulators assessing and collecting penalties for BSA violations, and FinCEN depositing funds into Treasury's General Fund. The report details the asset forfeiture processes, noting the involvement of various agencies and the transfer of assets to the Treasury Forfeiture Fund. To respond to our first objective, we identified and analyzed these agencies\u2019 data on enforcement actions taken against financial institutions that resulted in fines, penalties, or forfeitures for violations of BSA/AML, FCPA, and U.S. sanctions programs requirements. Specifically, we analyzed publicly available data from January 2009 through December 2015 on penalties assessed against financial institutions by the Federal Reserve, FDIC, OCC, SEC, and the Financial Crimes Enforcement Network (FinCEN), a bureau within Treasury, for violations of BSA/AML requirements. NCUA officials we spoke with explained that they had not assessed any penalties against financial institutions for violations of BSA/AML requirements from January 2009 through December 2015. FDIC and SEC provided us with a list of enforcement actions they took for BSA/AML violations since 2009, as we were not able to identify all of their actions through their publicly available data. We also reviewed Federal Reserve data on penalties for violations of U.S. sanctions programs requirements and data that SEC provided on FCPA violations. In addition, we reviewed enforcement actions listed on Treasury\u2019s Office of Foreign Assets Control (OFAC) website to identify penalties assessed against financial institutions for violations of U.S. sanctions programs requirements enforced by OFAC. To identify enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website, we applied Treasury\u2019s definition of financial institutions, which covers regulated entities in the financial industry. To identify criminal cases against financial institutions for violations of BSA and sanctions-related requirements, we reviewed press releases from DOJ\u2019s Asset Forfeiture and Money Laundering Section, associated court documents, and enforcement actions taken against financial institutions from the actions listed on OFAC\u2019s website (see table 3 for a list of these cases). We obtained data from DOJ\u2019s Consolidated Asset Tracking System to determine the amounts forfeited for these cases, and verified any Treasury-related data in DOJ\u2019s system by obtaining information from the Treasury Executive Office for Asset Forfeiture. DOJ had not brought any criminal cases against financial institutions for violations of FCPA. From 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund. The report highlights the need for better transparency and accountability in these processes."
+    },
+    {
+     "id": "S4",
+     "text": "Recommendations suggest improvements in transparency and accountability for penalty funds and asset forfeiture processes, emphasizing the need for clear documentation and standardized procedures across agencies."
+    },
+    {
+     "id": "S5",
+     "text": "From 2009 to 2015, financial regulators and FinCEN assessed and collected penalties and forfeitures, with significant amounts going to Treasury's General Fund and the Treasury Forfeiture Fund. The report highlights the need for better transparency and accountability in these processes."
+    }
+   ],
+   "next": 6
+  }
+ ]
+}
