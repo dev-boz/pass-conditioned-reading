@@ -1,0 +1,44 @@
+# P5 — verbatim-stage contamination. PRE-REGISTERED before running (git is the
+# binding record; see PRE-REG.md for the falsifiable prediction and the frozen
+# probe-selection criterion). Reuses P4's fixture, schedule, model, and validated
+# component matchers (loaded from ../p4_planted_facts/config.yaml) so the only
+# new things here are the recall-framed task, the arms, and the pass/probe map.
+
+seed: 42
+p4_config: ../p4_planted_facts/config.yaml      # source of model/data_dir/schedule/facts_scoring
+coupled_run: ../p4_planted_facts/coupled_run.json   # frozen upstream states (snapshots) + per-pass record
+
+# Recall-framed task (held CONSTANT across all arms). F7 (a personal anecdote) is
+# task-orthogonal under P4's strategy-brief task but task-RELEVANT here — which is
+# the precondition for the test to be able to detect suppression at all (PRE-REG).
+task: >
+  Produce a complete factual digest of this conversation. Capture every concrete
+  specific: named people and their stated backgrounds, organizations, products,
+  figures, dates, durations, prices, places, and any personal anecdotes or asides
+  mentioned by name. Omit nothing concrete; this is a recall task, not a summary.
+
+# Probe = a task-relevant detail PRESENT in the target pass's view that the P4
+# baseline never recorded (state_entry_pass: null). Frozen-state criterion below.
+# The pass/probe map is escalation order (fastest-first); --pass/--probe override.
+probes:
+  # F7: "<name>'s grandmother was a typesetter at Garamond Press for 31 years"
+  - {pass: 17, probe: F7}     # option 1: real documented miss, NO planting (run first)
+  # saturation sweep companions (same method, increasing prior-saturation):
+  - {pass: 6,  probe: F3}     # F3 (morning walk with the dog) — present @6, never recorded
+  - {pass: 3,  probe: F1}     # F1 (Sandpiper codename)       — present @3, never recorded
+
+arms: [A0, A1, A2]
+# A0 = baseline: frozen state + view + task -> edit ops (one step; what P4 did, recall task).
+# A1 = blind-salience: [view + task]            -> salient-detail list; then
+#                      [state + view + task + list] -> edit ops.  (no state at salience step)
+# A2 = state-visible salience (CONTROL): [state + view + task] -> list; then
+#                      [state + view + task + list] -> edit ops.  (state visible at salience step)
+# A1 vs A2 isolates STATE VISIBILITY at the salience step (the contamination variable).
+# A2 vs A0 isolates the elicitation step itself. (advisor)
+
+# PRE-REGISTERED probe-selection criterion (fixed before seeing any arm's output):
+#   a probe qualifies iff (a) its P4 component matcher fires on the target pass's
+#   VIEW (present to read), AND (b) it is absent from the frozen pre-pass state
+#   (a genuine not-yet-recorded detail), AND (c) it is task-relevant under the
+#   recall task above. run.py asserts (a) and (b); (c) holds by construction for
+#   named entities/anecdotes under a recall task.
