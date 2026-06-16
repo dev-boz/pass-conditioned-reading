@@ -51,3 +51,23 @@ A (pass p, probe fact) pair qualifies iff: (a) the probe's P4 matcher **fires on
 ## Scope / honesty
 
 n is small — this is a **mechanism-existence probe at a fixed prompt floor**, like P4, not an effect-size estimate; replicate across probes/seeds before claiming generality. **A positive does not establish M1 viability** — it says the floor's salience miss is caused by state-conditioning and is addressable; viability rides on the trained student (E2′). A negative does not refute coupling. Same untrained Qwen-7B floor and $0 local inference as the P-series.
+
+## Amendment — explicit-ask condition (added before the explicit runs were scored)
+
+The first (vague-task) runs exposed a confound: the original task ("capture *every*
+concrete specific") leaves it to the model to *judge* whether a given aside is
+worth recording, so a "drop" conflates **"didn't judge it salient" (task vagueness)**
+with **"prior state suppressed it" (contamination)** — and the vague results were
+correspondingly noisy (F7@17 all-drop with the blind salience step listing the fact
+but the edit step dropping it; F3@6 the *state-visible* arm kept it while the blind
+arm dropped it — opposite directions, i.e. a coin toss). Fix (`--explicit`): the
+task **names the information need** using the fixture's real queries
+(`explicit_asks` in `config.yaml`), so the model is told exactly what is wanted. A
+drop of an explicitly-requested, in-view fact is then unambiguous, and:
+- **all arms record it** ⇒ P4's miss was vagueness/salience-misjudgment, *not*
+  contamination (query-conditioned coupled reading recovers the fact);
+- **blind (A1) keeps, state-visible (A0/A2) drop** ⇒ clean contamination even under
+  an explicit ask.
+
+The vague runs are retained as the (confounded) unprompted control. This amendment
+was committed before any explicit-condition arm was scored.

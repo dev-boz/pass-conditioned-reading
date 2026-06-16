@@ -107,6 +107,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pass", dest="pass_k", type=int, default=None)
     ap.add_argument("--probe", default=None)
+    ap.add_argument("--explicit", action="store_true",
+                    help="name the information need (the fixture query) in the task — removes the "
+                         "'did the model guess this matters?' confound")
     args = ap.parse_args()
 
     cfg = yaml.safe_load((HERE / "config.yaml").read_text(encoding="utf-8"))
@@ -114,6 +117,12 @@ def main():
     target = ({"pass": args.pass_k, "probe": args.probe} if args.pass_k else cfg["probes"][0])
     p, fid = target["pass"], target["probe"]
     spec = p4["facts_scoring"][fid]
+    if args.explicit:
+        task = cfg["explicit_task_tmpl"].format(q=cfg["explicit_asks"][fid])
+        tag = "explicit"
+    else:
+        task = cfg["task"]
+        tag = "vague"
 
     turns = load_turns((HERE / cfg["p4_config"]).resolve().parent / Path(p4["data_dir"]) / "conversation.jsonl")
     sch = build_schedule(turns, p4["schedule"]["V"], p4["schedule"]["R"], tuple(p4["schedule"]["stage_fracs"]))
@@ -140,7 +149,7 @@ def main():
     server.ensure_running()
     results = []
     for arm in cfg["arms"]:
-        r = run_arm(arm, server, cfg, m, cfg["task"], p, K, frozen_entries, view, spec,
+        r = run_arm(arm, server, cfg, m, task, p, K, frozen_entries, view, spec,
                     p4["budgets"]["max_ops_per_pass"])
         results.append(r)
         print(f"  {arm}: probe_present={r['probe_present_after']} "
@@ -148,12 +157,12 @@ def main():
               f"entries={r['state_entries_after']} ({r['wall_s']}s)", flush=True)
     server.stop()
 
-    out = HERE / f"p5_pass{p}_{fid}.json"
-    out.write_text(json.dumps({"pass": p, "probe": fid, "K": K, "task": cfg["task"].strip(),
+    out = HERE / f"p5_pass{p}_{fid}_{tag}.json"
+    out.write_text(json.dumps({"pass": p, "probe": fid, "K": K, "mode": tag, "task": task.strip(),
                                "frozen_state_entries": len(frozen_entries), "view_tokens": n_tokens(view),
                                "arms": results}, indent=1, ensure_ascii=False), encoding="utf-8")
     verdict = {r["arm"]: r["probe_present_after"] for r in results}
-    print(f"\nVERDICT pass={p} probe={fid}: {verdict}")
+    print(f"\nVERDICT pass={p} probe={fid} [{tag}]: {verdict}")
     print("  read: A1/A2 keep & A0 drop -> elicitation helps; A1 keep & A2 drop -> STATE-VISIBILITY "
           "(contamination) is the variable; all-same -> no effect at this pass.")
     print(f"-> {out}")

@@ -27,6 +27,20 @@ probes:
   - {pass: 6,  probe: F3}     # F3 (morning walk with the dog) — present @6, never recorded
   - {pass: 3,  probe: F1}     # F1 (Sandpiper codename)       — present @3, never recorded
 
+# Explicit-ask mode (--explicit): the task NAMES the information need (the fixture's
+# real queries), removing the "did the model guess this detail matters?" confound.
+# A drop of an explicitly-requested, in-view fact is then unambiguous; A1-keep/A2-drop
+# is clean contamination. If the explicit ask makes all arms record it, P4's miss was
+# vagueness/salience-misjudgment, not contamination.
+explicit_asks:
+  F1: "What was the internal codename for the launch?"
+  F3: "Where does the speaker say they do their best thinking, or where did the idea for the product come from?"
+  F7: "What did the speaker say their grandmother did for a living, and for how long?"
+explicit_task_tmpl: >
+  You are building an integration state that a reader will later use to answer this
+  specific question: "{q}" Record into the state every detail relevant to answering
+  it accurately, even small asides — this is the information that matters.
+
 arms: [A0, A1, A2]
 # A0 = baseline: frozen state + view + task -> edit ops (one step; what P4 did, recall task).
 # A1 = blind-salience: [view + task]            -> salient-detail list; then
