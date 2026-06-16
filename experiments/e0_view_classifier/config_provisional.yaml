@@ -1,0 +1,43 @@
+# E0 — position-from-view classifier. PRE-REGISTERED before any run.
+# The gate below was written into this file prior to executing run.py
+# (git-free workspace: the config hash echoed in RESULTS.md/GATES.md is the
+# binding record).
+
+views_path: ../../data/views/views.jsonl
+seed: 42
+
+split:                  # by doc_id, never by view (validity req. 3)
+  train: 0.70
+  val: 0.15
+  test: 0.15
+
+buckets:                # D8: terciles of t=(k-1)/(K-1)
+  early_max_t: 0.3333
+  mid_max_t: 0.6667
+
+tier_a:                 # shallow leakage: hand features -> logistic regression
+  features: [len_tokens, len_chars, type_token_ratio, stopword_frac,
+             mean_sent_len_tokens, n_sentences, punct_density, numeral_frac,
+             cap_word_frac, mean_word_len]
+  model: logreg
+  max_iter: 2000
+
+tier_b:                 # representational leakage: frozen encoder + probes
+  encoder: sentence-transformers/all-MiniLM-L6-v2   # CPU
+  probes:
+    linear: {model: logreg, max_iter: 2000}
+    mlp: {hidden: 256, max_iter: 400, early_stopping: true}
+
+targets:
+  exact_k: {metrics: [accuracy, macro_f1, confusion_matrix, acc_within_1]}
+  bucket: {metrics: [accuracy]}
+  norm_position: {model: ridge, metrics: [r2]}
+
+# ---- PRE-REGISTERED GATE (verbatim from the brief; do not edit post-hoc) ----
+gate:
+  metric: tier_b_bucket_test_accuracy   # probe selected on validation accuracy
+  time_agnostic_min: 0.90               # >= 0.90 -> regime = time-agnostic
+  signal_carrying_max: 0.70             # <= 0.70 -> regime = signal-carrying
+  # between -> regime = mixed; proceed with caution flags
+  provisional: true                     # stand-in extractive compressor (D6);
+                                        # regime call labelled E0-provisional

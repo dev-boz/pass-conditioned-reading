@@ -4,3 +4,11 @@ __pycache__/
 *.pyc
 data/corpus/corpus.jsonl
 data/views/views.jsonl
+# production (Haiku) view sets + intermediates — regenerated, not vendored (DATA_CARD)
+data/views/views_haiku*.jsonl
+data/views/views_kiro_only.jsonl
+data/views/slices.jsonl
+# P4 synthetic fixture + raw run dumps (fixture-derived content) — not vendored
+data/planted_facts/
+experiments/p4_planted_facts/coupled_run.json
+experiments/p4_planted_facts/dense_run.json

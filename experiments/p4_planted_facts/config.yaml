@@ -1,0 +1,80 @@
+# P4 — planted-facts recall on the 80K Sandpiper conversation. PRE-REGISTERED
+# before running (git is the binding record; config hash echoed in RESULTS.md).
+# This is the first experiment scoring STATE QUALITY against ground truth, not
+# edit-op format. Prompt-level pilot: extractive stand-in compressor + the
+# rubric-conditioned prompt floor from P3 (now E1's prompt-floor definition);
+# NO trained model. Param derivations: DECISIONS.md D25–D28.
+
+data_dir: "data/planted_facts"   # synthetic 80K fixture (conversation.jsonl + planted_facts.json + queries.json); NOT vendored — see RESULTS.md for its construction
+seed: 42
+
+schedule:
+  V: 3000           # per-view token budget (D26); verbatim tile <= V. Chosen for a
+                    # real compressed-vs-verbatim contrast (Phase-A ~5x) while K stays
+                    # near the parent's ~30-pass calibration for an 80K source.
+  R: 5              # Phase-A coarse global-scaffold chunks (D25)
+  stage_fracs: [0.34, 0.67]   # pass-fraction boundaries scaffold|concrete|verbatim (D27)
+
+model:              # local llama.cpp, $0 (D11); larger ctx than P1 for the 80K source
+  server_exe: ../../models/llamacpp/llama-server.exe
+  model_path: ../../models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+  ctx: 16384
+  port: 8088
+  threads: 8
+  max_tokens: 900
+  temperature: 0.0
+
+budgets:
+  state_tokens: 4000        # warn (don't truncate); state + V + overhead <= ctx (D28)
+  max_ops_per_pass: 16
+
+dense_baseline:             # single-pass, window-bound existence check (M1)
+  ctx: 16384                # CPU-feasible (32768 prefill exceeded the client timeout); reaches
+                           # the same facts — head has seg 1-2 (F4), tail has seg 13-16 (F8),
+                           # the mid-doc F7 is unreachable either way (D28)
+  fill_tokens: 14000        # head + tail single-pass read (~19% of the 73K source)
+  head_frac: 0.5            # 50/50 head/tail split; middle omitted with a marker
+
+task: >
+  You are building a single comprehensive analytical brief of a long product-launch
+  planning conversation: the product and its positioning, the go-to-market strategy
+  and how it evolved, the key constraints and figures, and the final decision and why.
+
+# ---- PRE-REGISTERED KILL CONDITION (M1 premise) ----
+gate:
+  metric: headline_fact_recall          # full-credit presence of the 8 facts in the FINAL state
+  rule: >
+    Coupled-schedule headline fact-recall must EXCEED the matched-compute single-pass
+    dense baseline's raw recall. If coupled <= dense, that is evidence against M1's
+    premise and must be reported as such (not buried). within-reach recall is reported
+    alongside for fairness, but the kill comparison uses raw recall.
+  provisional: true                     # extractive stand-in compressor (same caveat as E0-provisional)
+
+# ---- NORMALIZED, COMPONENT-LEVEL SCORING SPEC (advisor catch: the state paraphrases) ----
+# Final-state recall uses these normalized component matchers; coverage-timing on the
+# SOURCE uses the manifest's exact strings. Each matcher is validated to fire on the
+# source before any state 0 is trusted (run.py asserts this).
+facts_scoring:
+  F1: {required: [sandpiper],            components: [{name: sandpiper, any: [Sandpiper]}]}
+  F2: {required: [cairn],                components: [{name: cairn, any: [Cairn]}]}
+  F3: {required: [walk, dog],            components: [{name: walk, any: [walk]}, {name: dog, any: [dog]}]}
+  F4: {required: [cap_8000],             components: [{name: cap_8000, any: ["8,000 units", "8,000-unit", "8000 units", "8000"]},
+                                                      {name: halvorsen, any: ["Halvorsen"]},
+                                                      {name: tallinn, any: [Tallinn]},
+                                                      {name: inkstone, any: [Inkstone]},
+                                                      {name: lead_14wk, any: ["14-week", "14 week"]}]}
+  F5: {required: [price_299],            components: [{name: price_299, any: ["$299", "299"]}]}
+  F6: {required: [meridian],             components: [{name: meridian, any: ["Meridian Outfitters", "Meridian"]}]}
+  F7: {required: [typesetter, garamond, yrs_31],
+       components: [{name: typesetter, any: [typesetter]}, {name: garamond, any: ["Garamond Press", "Garamond"]},
+                    {name: yrs_31, any: ["31 years", "31-year"]}]}
+  F8: {required: [founders_edition],     components: [{name: founders_edition, any: ["Founders' Edition", "Founders Edition"]}]}
+
+# Query-level rollups (mechanical component-presence, NOT the LLM-judge grading the
+# query set ships with; reported as such):
+query_rollups:
+  Q1:  {full: [F1.sandpiper]}
+  Q1b: {full: [F3.walk, F3.dog],            partial: [F3.walk]}
+  Q2:  {full: [F7.typesetter, F7.garamond, F7.yrs_31], partial: [F7.typesetter]}
+  Q3:  {full: [F6.meridian, F8.founders_edition, F4.cap_8000], partial: [F8.founders_edition]}
+  Q4:  {full: [F8.founders_edition, F4.cap_8000, F5.price_299], partial: [F8.founders_edition]}

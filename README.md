@@ -15,19 +15,24 @@ This repository is the **public pre-registration and the running audit trail**, 
 
 | Stage | What | State |
 |---|---|---|
-| **E0** | Position-from-view classifier (the regime gate) | **Done, provisional** — see below |
+| **E0** | Position-from-view classifier (the regime gate) | Done (provisional) — superseded by E0-final |
 | **P1** | Prompt-level micro-pilot: coupled vs input-/output-staged | Done (parser v2.1) |
 | **P2** | Position-token pilot (explicit position field vs none) | Done (parser v2.1) |
 | **P3** | Prompt-rubric pilot (position / +rubric / +confidence) | Done |
-| **P4** | **80K planted-facts run** — recall of deliberately planted facts across a long synthetic source under the coupled schedule | **🔜 in progress** |
-| **E0-final** | Non-provisional E0 on production (LLM-summarized) views | **🔜 in progress** — priced upgrade path documented in the E0 report |
+| **P4** | **80K planted-facts run** — recall of deliberately planted facts across a long synthetic source under the coupled schedule | **Done — pre-registered kill condition FAILED** (see below) |
+| **E0-final** | Non-provisional E0 on production (Haiku-summarized) views | **Done — regime = signal-carrying** (0.561; kiro-only robustness 0.584) |
+| **P5** | **Verbatim-stage contamination** — does conditioning the verbatim read on prior state suppress recording of task-relevant detail? (final-pass-only, frozen upstream state) | Next; pre-registration being written |
 | **E1′ / E2′** | The trained conditioning-channel and coupling experiments | Gated behind the above; **not yet run** |
 
-### E0 — provisional, by design
+### E0 — now final: regime = signal-carrying
 
-E0 asks whether pass position `(k, K)` is recoverable from the view `v_k` alone (near-ceiling → time-agnostic regime, the explicit channel is predicted redundant; low → signal-carrying, the program proceeds). **Result: regime = signal-carrying** (Tier-B bucket accuracy 0.433 vs 0.90/0.70 pre-registered thresholds).
+E0 asks whether pass position `(k, K)` is recoverable from the view `v_k` alone (near-ceiling → time-agnostic regime, the explicit channel is predicted redundant; low → signal-carrying, the program proceeds).
 
-It is labelled **`E0-provisional`** and must not be read as final: the views were produced by a deterministic **extractive stand-in compressor**, not the production teacher-LLM summarizer (no zero-cost inference path was available). The stand-in caveat, the direction of risk, and the priced upgrade path (≈US$8–15 of LLM compression, or a local GPU summarizer) are all stated in [`experiments/e0_view_classifier/RESULTS.md`](experiments/e0_view_classifier/RESULTS.md) and [`docs/GATES.md`](docs/GATES.md). Honest negatives and provisional calls in public are a feature, not an omission.
+**E0-final (non-provisional):** run on 2 400 production views from the teacher compressor **Claude Haiku 4.5** (D29/D30). **Regime = signal-carrying** — Tier-B (semantic) bucket accuracy **0.561** vs the pre-registered 0.90 / 0.70 thresholds. A robustness gate on the single-path Kiro-only subset (1 974 views) lands at **0.584**, so the result is not an artifact of the multi-path generation; the production run stands on its own and the provisional label is dropped. Two read-it-right notes are in the report: **0.561 is *not* delta-comparable to the provisional 0.433** (E0-final changed both the compressor *and* the Tier-B instrument — it added chunk-and-pool), and the **Tier-A hand-feature 0.672 is the deliberately excluded length/schedule channel (D7)**, reported transparently, not gated. Details: [`experiments/e0_view_classifier/RESULTS_FINAL.md`](experiments/e0_view_classifier/RESULTS_FINAL.md), the cross-compressor fidelity check [`KIRO_FIDELITY.md`](experiments/e0_view_classifier/KIRO_FIDELITY.md), and [`docs/GATES.md`](docs/GATES.md). The original provisional run (extractive stand-in, 0.433, same signal-carrying call) is preserved in [`RESULTS.md`](experiments/e0_view_classifier/RESULTS.md).
+
+### P4 — the pre-registered kill condition failed (reported, not buried)
+
+P4 scored recall of deliberately planted facts in an 80K synthetic document, coupled schedule vs a single generous dense read. **Pre-registered kill rule: coupled must *exceed* dense, else evidence against M1's premise.** Outcome: **coupled 0.625 (5/8) ≤ dense 0.625** — at ~11× tokens and ~9× wall-clock, no recall advantage on this document. Diagnosis (not eviction): coverage worked and every fact reached a view; the untrained 7B floor simply declined to record three *task-orthogonal* asides, and the recall metric is partly measuring task-salience rather than coverage. Not an M1 refutation (n=1, untrained floor, task↔fact salience tension) but a real failure of the premise *as operationalized here* — carried, with diagnosis, into the E2′ design. Full account in [`experiments/p4_planted_facts/RESULTS.md`](experiments/p4_planted_facts/RESULTS.md).
 
 ### The P-pilots and the parser correction (proof-of-method)
 
@@ -41,18 +46,20 @@ The full v1 → v2.0 → v2.1 parser progression — including the under-fix in 
 
 ## Reproducibility
 
-- **[`docs/DECISIONS.md`](docs/DECISIONS.md)** lists all **24 invented parameters** traced to the spec line each derives from — which doubles as a spec-completeness audit of the parent proposal (it defines the schedule *shape* but almost no concrete values).
-- `uv`-managed, pinned deps (`pyproject.toml`, `uv.lock`); fixed seeds throughout; every experiment re-runnable from its config alone. E0 is CPU-only; the P-pilots use local CPU inference (Qwen2.5-7B-Instruct via llama.cpp), so the published numbers cost $0 to reproduce.
-- `make e0 | p1 | p2 | p3` (or the equivalent `uv run` lines in the `Makefile`). The corpus (`data/views/views.jsonl`) and model weights are **not vendored** — `data/views/DATA_CARD.md` + `views_config.yaml` document regeneration, and `src/pca/gen_views.py` rebuilds the views.
+- **[`docs/DECISIONS.md`](docs/DECISIONS.md)** lists all **30 invented parameters** traced to the spec line each derives from — which doubles as a spec-completeness audit of the parent proposal (it defines the schedule *shape* but almost no concrete values).
+- `uv`-managed, pinned deps (`pyproject.toml`, `uv.lock`); fixed seeds throughout; every experiment re-runnable from its config alone. E0 (both runs) is CPU-only; the P-pilots use local CPU inference (Qwen2.5-7B-Instruct via llama.cpp), so those numbers cost $0 to reproduce. E0-final's views require the teacher compressor (Claude Haiku 4.5) — see the data card for the delivery paths and `gen_path` provenance.
+- `make e0 | p1 | p2 | p3` (or the equivalent `uv run` lines in the `Makefile`). The corpus and view sets (`data/views/views*.jsonl`) and model weights are **not vendored** — `data/views/DATA_CARD.md` + `views_config.yaml` document regeneration; `src/pca/gen_views.py` rebuilds the provisional views, `pca.gen_views_llm` + `pca.merge_paths` the production (Haiku) views.
 
 ## Layout
 
 ```
 docs/        pre-registration outline, both arbitration docs, DECISIONS.md, GATES.md
-experiments/ e0_view_classifier/  p1_micro_pilot/  p2_position_pilot/  p3_prompt_rubric/
+experiments/ e0_view_classifier/ (incl. RESULTS_FINAL.md, KIRO_FIDELITY.md, results_final/)
+             p1_micro_pilot/  p2_position_pilot/  p3_prompt_rubric/  p4_planted_facts/
              (each: config, runner, RESULTS/transcripts, metrics.json; parser-v1/v2.0 archives)
-src/pca/     view schedule, compressors, edit-op parser + tests, llama.cpp client, feature code
-data/views/  DATA_CARD.md + views_config.yaml (the corpus itself is regenerated, not shipped)
+src/pca/     view schedule, compressors (extractive + claude-p/Kiro Haiku), edit-op parser
+             + tests, llama.cpp client, planted-facts scoring, view/merge drivers, feature code
+data/views/  DATA_CARD.md + views_config.yaml (corpus + view sets are regenerated, not shipped)
 ```
 
 ## Licensing
@@ -64,4 +71,4 @@ Dual-licensed by artifact type:
 
 ## Scope and honesty
 
-M1 (the coupling interaction) is the paper; if its interaction term is null, this reduces to the parent's claims plus one-sided staging results that already exist. M2 is a distillation-efficiency measurement under a stated null. Nothing here is the trained comparison — E1′/E2′ remain the arbiters. E0 may yet kill M2 and D1 before any GPU is touched once it is run on production views; that is the intended function of running it first.
+M1 (the coupling interaction) is the paper; if its interaction term is null, this reduces to the parent's claims plus one-sided staging results that already exist. M2 is a distillation-efficiency measurement under a stated null. Nothing here is the trained comparison — E1′/E2′ remain the arbiters. E0-final did **not** kill M2/D1 (signal-carrying → the explicit channel is not predicted redundant, the probes stay interpretable), and P4 fired its kill condition against M1's premise *as operationalized by an untrained floor* — both outcomes are on the record above, unedited. The next gate (P5) probes one mechanism behind P4's result; it cannot settle viability either, because viability rides on the trained student (E2′), not on getting an untrained floor over the line.

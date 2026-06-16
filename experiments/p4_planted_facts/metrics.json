@@ -1,0 +1,162 @@
+{
+  "config_hash": "415fb49232e02ca3",
+  "source_tokens": 72943,
+  "K": 32,
+  "n_facts": 8,
+  "mean_formulas": {
+    "headline_fact_recall": "count(facts full-credit present in FINAL state) / 8",
+    "by_tier": "same, partitioned by manifest tier",
+    "by_source_position": "same, partitioned by tercile of the fact's first-occurrence turn"
+  },
+  "arms": {
+    "coupled": {
+      "headline_fact_recall": 0.625,
+      "facts_present": {
+        "F1": false,
+        "F2": true,
+        "F3": false,
+        "F4": true,
+        "F5": true,
+        "F6": true,
+        "F7": false,
+        "F8": true
+      },
+      "by_tier": {
+        "2-distinctive": 0.75,
+        "1-common": 0.0,
+        "2+tier3-setup": 1.0,
+        "2-single-turn-detail": 0.0,
+        "3-position-dependent": 1.0
+      },
+      "by_source_position": {
+        "early": 0.6666666666666666,
+        "mid": 0.0,
+        "late": 1.0
+      },
+      "coverage_timing": {
+        "F1": {
+          "tier": "2-distinctive",
+          "source_position": "early",
+          "slice_coverage_pass": 1,
+          "view_presence_pass": 3,
+          "state_entry_pass": null,
+          "present_at_final": false,
+          "evicted": false
+        },
+        "F2": {
+          "tier": "2-distinctive",
+          "source_position": "early",
+          "slice_coverage_pass": 1,
+          "view_presence_pass": 1,
+          "state_entry_pass": 2,
+          "present_at_final": true,
+          "evicted": false
+        },
+        "F3": {
+          "tier": "1-common",
+          "source_position": "early",
+          "slice_coverage_pass": 1,
+          "view_presence_pass": 6,
+          "state_entry_pass": null,
+          "present_at_final": false,
+          "evicted": false
+        },
+        "F4": {
+          "tier": "2+tier3-setup",
+          "source_position": "early",
+          "slice_coverage_pass": 1,
+          "view_presence_pass": 1,
+          "state_entry_pass": 3,
+          "present_at_final": true,
+          "evicted": false
+        },
+        "F5": {
+          "tier": "2-distinctive",
+          "source_position": "early",
+          "slice_coverage_pass": 1,
+          "view_presence_pass": 1,
+          "state_entry_pass": 2,
+          "present_at_final": true,
+          "evicted": false
+        },
+        "F6": {
+          "tier": "2-distinctive",
+          "source_position": "early",
+          "slice_coverage_pass": 2,
+          "view_presence_pass": 2,
+          "state_entry_pass": 2,
+          "present_at_final": true,
+          "evicted": false
+        },
+        "F7": {
+          "tier": "2-single-turn-detail",
+          "source_position": "mid",
+          "slice_coverage_pass": 3,
+          "view_presence_pass": 17,
+          "state_entry_pass": null,
+          "present_at_final": false,
+          "evicted": false
+        },
+        "F8": {
+          "tier": "3-position-dependent",
+          "source_position": "late",
+          "slice_coverage_pass": 4,
+          "view_presence_pass": 4,
+          "state_entry_pass": 26,
+          "present_at_final": true,
+          "evicted": false
+        }
+      },
+      "f4_f8_co_present_at_final": true,
+      "component_detail_F4": {
+        "cap_8000": true,
+        "halvorsen": true,
+        "tallinn": false,
+        "inkstone": true,
+        "lead_14wk": true
+      },
+      "component_detail_F7": {
+        "typesetter": false,
+        "garamond": false,
+        "yrs_31": false
+      },
+      "total_tokens_processed": 159451,
+      "wall_clock_min": 231.5,
+      "alias_misplacement_flags": "none"
+    },
+    "dense": {
+      "raw_fact_recall": 0.625,
+      "within_reach_recall": 0.7142857142857143,
+      "n_within_reach": 7,
+      "facts_present": {
+        "F1": false,
+        "F2": true,
+        "F3": false,
+        "F4": true,
+        "F5": true,
+        "F6": true,
+        "F7": false,
+        "F8": true
+      },
+      "facts_within_reach": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true,
+        "F5": true,
+        "F6": true,
+        "F7": false,
+        "F8": true
+      },
+      "total_tokens_processed": 13883,
+      "wall_clock_min": 24.5
+    }
+  },
+  "kill_condition": {
+    "rule": "Coupled-schedule headline fact-recall must EXCEED the matched-compute single-pass dense baseline's raw recall. If coupled <= dense, that is evidence against M1's premise and must be reported as such (not buried). within-reach recall is reported alongside for fairness, but the kill comparison uses raw recall.",
+    "coupled_recall": 0.625,
+    "dense_raw_recall": 0.625,
+    "verdict": "FAIL \u2014 coupled <= dense (evidence against M1 premise)",
+    "provisional": true
+  }
+}
