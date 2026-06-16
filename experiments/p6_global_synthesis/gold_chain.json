@@ -1,0 +1,31 @@
+{
+  "_doc": "Gold causal chain for the P6 global-synthesis test, authored from the synthetic Sandpiper fixture (390 turns, 16 segments; not vendored — see the P4 data card). Matchers use the P4 normalize() convention (lowercase; strip $ and digit-commas; hyphens->space). Authored 2026-06-16, verified against the source segments cited.",
+  "question": "Why did the launch end up going direct-to-consumer instead of through a retail partnership? Trace the sequence of constraints and events that led to that decision.",
+  "reference_chain_prose": "A hard manufacturing cap of 8,000 units (Halvorsen Assembly, Inkstone lead times, seg2-3) was set early. The team pursued a real retail launch with Meridian (seg6-7). But Meridian's buyer would only take a full-fleet holiday rollout requiring 30,000-40,000 units (plus a non-negotiable exclusivity clause) — far beyond the 8,000-unit cap, so the retail deal collapsed (seg9). Left with no retail partner and an unchanged cap (seg10), the team pivoted to a direct-to-consumer, invite-only model (seg11-12) built on a waitlist targeting ~25,000 signups and a Founders' Edition (seg13).",
+  "links": [
+    {"id": "L1_cap", "region": "head", "desc": "the 8,000-unit manufacturing cap (the binding constraint)",
+     "any": ["8000 units", "8000 unit", "8000", "halvorsen", "inkstone"]},
+    {"id": "L2_retail_pursued", "region": "head-mid", "desc": "pursued a retail launch via Meridian",
+     "any": ["meridian", "retail launch", "shelf presence", "retail partner", "full retail"]},
+    {"id": "L3_volume_mismatch", "region": "MID", "discriminating": true,
+     "desc": "DISCRIMINATING mid-doc causal hinge: retail collapsed because Meridian demanded full-fleet / holiday-density volume far above the 8,000 cap. Lives only in seg9.",
+     "any": ["full fleet", "holiday density"],
+     "matcher_note": "VERIFIED mid-doc-exclusive: 'full fleet' and 'holiday density' occur in seg9 ONLY. The bare numbers '30000'/'40000' were REJECTED as L3 matchers — they also appear in head (seg2) and tail (seg13,16) in unrelated contexts, so they'd give the dense head+tail baseline a false-positive hinge (a P4-style matcher trap). A numeric '30,000-40,000' claim counts toward L3 ONLY if it co-occurs with 'meridian'/'retail' in the same answer (runner implements the co-occurrence); the two phrases here are the clean primary signal. The runner MUST assert these L3 terms do NOT fire on the dense head+tail context."},
+    {"id": "L4_pivot_direct", "region": "mid-tail", "desc": "with no retail partner and unchanged cap, pivot to a direct / invite-only model",
+     "any": ["no retail partner", "direct model", "direct to consumer", "invite only", "invite-only"]},
+    {"id": "L5_founders_waitlist", "region": "tail", "desc": "the direct model: waitlist (~25,000) + Founders' Edition",
+     "any": ["founders edition", "waitlist", "25000", "creator seeding"]}
+  ],
+  "scoring": {
+    "headline_metric": "L3_volume_mismatch present in the answer — the mid-doc causal hinge a head+tail/dense reader cannot reach. This is the discriminating result.",
+    "chain_completeness": "count of L1..L5 present (co-presence).",
+    "ordering": "for the coupled arms, whether L1->L3->L4->L5 appear in state-entry order (extend P4 Tier-3 co-presence+ordering; reported, not the headline).",
+    "note": "Score the ARM'S FINAL ANSWER text (a closing 'answer the question from your state/context' call), identically across coupled / verbatim-only / dense, so the comparison is apples-to-apples on output. Mechanical component match is the skeleton; an LLM-judge (Kiro Haiku) may give a secondary read on whether the causal 'because' is actually asserted, with the usual judge-confound caveat — it does not carry the verdict."
+  },
+  "predicted_outcomes": {
+    "dense_headtail": "gets L1 (head) + L4/L5 (tail) but MISSES L3 (mid-doc) -> states 'they chose direct' without the real reason; chain incomplete at the hinge.",
+    "coupled_full": "coarse scaffold (Phase A) sees all segments compressed + verbatim mid-tiles deliver seg9 -> should contain L3 and the full ordered chain.",
+    "verbatim_only_no_scaffold": "the key ablation: coverage without the coarse global pass. Tests whether the scaffold specifically helps ASSEMBLE the distributed chain, vs tiling alone."
+  },
+  "differentiator_confirmed_iff": "coupled_full produces the full chain INCLUDING L3 (mid-doc hinge), dense misses L3, AND coupled_full >= verbatim_only on L3/chain-completeness (isolating the scaffold's contribution)."
+}

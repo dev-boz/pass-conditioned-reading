@@ -22,6 +22,7 @@ This repository is the **public pre-registration and the running audit trail**, 
 | **P4** | **80K planted-facts run** — recall of deliberately planted facts across a long synthetic source under the coupled schedule | **Done — pre-registered kill condition FAILED** (see below) |
 | **E0-final** | Non-provisional E0 on production (Haiku-summarized) views | **Done — regime = signal-carrying** (0.561; kiro-only robustness 0.584) |
 | **P5** | **Verbatim-stage contamination** — does conditioning the read on prior state suppress recording of a task-relevant detail present in the view? (frozen upstream state; arms A0/A1/A2 isolate state-visibility) | **Done — no robust contamination**; P4's misses were task-vagueness, not prior-state suppression (see below) |
+| **P6** | **Whole-document synthesis** — can the coarse-scaffold schedule answer a causal *why* whose hinge is mid-document (which head+tail/RAG structurally miss)? arms: dense / coupled / verbatim-only-no-scaffold | **Pre-registered** ([`PRE-REG.md`](experiments/p6_global_synthesis/PRE-REG.md), [`gold_chain.json`](experiments/p6_global_synthesis/gold_chain.json)); first of a planned battery; run pending |
 | **E1′ / E2′** | The trained conditioning-channel and coupling experiments | Gated behind the above; **not yet run** |
 
 ### E0 — now final: regime = signal-carrying

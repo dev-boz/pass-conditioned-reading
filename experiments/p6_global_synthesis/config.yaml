@@ -1,0 +1,11 @@
+# P6 — global-synthesis test. PRE-REGISTERED (PRE-REG.md + gold_chain.json committed
+# before scoring). Reuses P4's fixture/schedule/model/matcher; only the task (the
+# synthesis question, taken from gold_chain.json) and the arms are new.
+seed: 42
+p4_config: ../p4_planted_facts/config.yaml      # model / data_dir / schedule / normalize matcher
+gold_chain: gold_chain.json                     # question + link matchers + scoring
+arms: [dense, coupled_full, verbatim_only]
+# verbatim_only = Phase-B verbatim tiles only (no Phase-A coarse scaffold) — the ablation
+# isolating whether the coarse global pass helps assemble the distributed causal chain.
+closing_call: true   # after state-building, ask the arm to answer the question from its state,
+                     # so all arms are scored on a comparable answer text.

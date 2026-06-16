@@ -14,3 +14,5 @@ experiments/p4_planted_facts/coupled_run.json
 experiments/p4_planted_facts/dense_run.json
 # P5 frozen-state run outputs — regenerated from the P4 coupled run
 experiments/p5_verbatim_contamination/p5_pass*.json
+# P6 global-synthesis run outputs — regenerated
+experiments/p6_global_synthesis/p6_results*.json
