@@ -8,10 +8,14 @@ This repository is the **public pre-registration and the running audit trail**, 
 
 ## Start here
 
+- **[`docs/CONSOLIDATED-FINDINGS.md`](docs/CONSOLIDATED-FINDINGS.md) — the consolidated record (E0–P7 + cross-family existence check), at true strength.** What was shown, what was not, the negatives and the open questions, and why the trained-model step (E2′) is justified *despite* the untrained floor not being validated. Supersedes the per-stage status table below for P7 and the cross-family work.
+- **[`docs/PUBLIC-SUMMARY.md`](docs/PUBLIC-SUMMARY.md) — the short, plain-language version**: *not unfeasible; possibly feasible with a trained model* — it did not fail, and it showed potential.
 - **[`docs/pca-outline-v0.3.md`](docs/pca-outline-v0.3.md) — the centerpiece.** The pre-registration: M1's coupling claim with explicit *kill criteria*, the regime-gated experiment program (E0 → P-pilots → E1′/E2′), and a fully citation-verified prior-art map.
 - **[`docs/gauntlet-arbitration.md`](docs/gauntlet-arbitration.md)** and **[`docs/verification-arbitration.md`](docs/verification-arbitration.md) — the method.** A 19-input adversarial review of the claims, plus a five-agent citation-verification sweep with arbitration that **caught fabricated citations in our own draft**. Published deliberately: the audit infrastructure is the point, and a documented self-correction is more informative than a polished claim.
 
 ## Status — a live program with its next gates named
+
+> **Update (2026-06-26):** experiments through **P7** (split-unit record→retain→compose) and a **cross-family existence check** are complete since this table was written; the consolidated record linked above under *Start here* is current. The table below is the running log through P6.
 
 | Stage | What | State |
 |---|---|---|
