@@ -90,9 +90,9 @@ src/pca/     view schedule, compressors (extractive + claude-p/Kiro Haiku), edit
 data/views/  DATA_CARD.md + views_config.yaml (corpus + view sets are regenerated, not shipped)
 ```
 
-## Licensing
+## Licensing 
 
-Docs and code are licensed separately. The documentation (the outline, both arbitration docs, the prior-art map, DECISIONS.md, GATES.md, the RESULTS files and the data card) is [CC BY 4.0](LICENSE-CC-BY-4.0.txt). The code (src/pca/, the experiment runners and the configs) is [Apache 2.0](LICENSE-Apache-2.0.txt). GitHub's sidebar shows no license because it can't classify a two-file split, but both license files are in the repo.
+Dual-licensed by artifact type: - **Documentation** — the outline, both arbitration documents, the prior-art map, `DECISIONS.md`, `GATES.md`, `RESULTS.md` files, and the data card — under **[CC BY 4.0](LICENSE-CC-BY-4.0.txt)**. Attribution required; redistribution and adaptation allowed.- **Code** — `src/pca/`, the experiment runners, and configs — under **[Apache License 2.0](LICENSE-Apache-2.0.txt)**.
 
 ## What's being claimed, and what isn't
 
