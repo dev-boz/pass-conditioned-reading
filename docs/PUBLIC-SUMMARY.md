@@ -71,3 +71,4 @@ This is a proposal, not a validated finding. Small-scale viability experiments a
 ### What would help
 
 This is a floor result that can't take its own next step alone. The most useful things right now would be a clean fine-tune (E2-prime) to actually test the trained-model hypothesis, a second pair of eyes on the data, the statistics and the prior-art map, or input from anyone who knows the diffusion-LM / long-context literature well enough to confirm or kill the novelty claim. If the method is wrong I'd rather hear it from you now than discover it later. Open to collaboration, correction and hard questions - dev-boz on GitHub.
+
