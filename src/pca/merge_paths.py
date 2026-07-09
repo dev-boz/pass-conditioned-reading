@@ -2,7 +2,7 @@
 
 Three first-class paths, each in its own file with provenance:
   local  -> data/views/views_haiku.jsonl         (claude -p, this box)
-  remote -> data/views/views_haiku_remote.jsonl  (claude -p over SSH, a second OAuth host)
+  remote -> data/views/views_haiku_remote.jsonl  (claude -p over SSH, the second OAuth host)
   kiro   -> data/views/views_haiku_kiro.jsonl    (Kiro CLI headless, credit-metered)
 
 Stamps `gen_path` on records that lack it (the OAuth files predate the field),

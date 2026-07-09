@@ -60,4 +60,79 @@ assert r6.valid == 4, (r6.valid, r6.invalid)
 st6.apply(r6.ops)
 assert [(e["id"], e["text"]) for e in st6.entries] == [("S2", "c")], st6.entries
 
-print("editops OK (parser v2.1)")
+# ---- v3: content-addressed REPLACE/REMOVE + clobber guard (D31) ---------
+# quoted REPLACE verifying against the target's current text
+st7 = IntegrationState()
+st7.apply(parse_ops(
+    "ADD END: REGION_SURCHARGE_CENTS table: 23:988, 45:210 (pricing module)\n"
+    "ADD END: FUNCTIONS: compute_line_surcharge, quote_line",
+    st7.ids(), st7.next_id).ops)
+r7 = parse_ops('REPLACE S1 "REGION_SURCHARGE_CENTS": REGION_SURCHARGE_CENTS table: '
+               "23:988, 45:210, 67:455 (pricing module, updated)", st7.ids(), st7.next_id)
+assert r7.valid == 1 and r7.ops[0].get("quote") == "REGION_SURCHARGE_CENTS", r7.ops
+st7.apply(r7.ops)
+assert "67:455" in st7.entries[0]["text"]
+
+# quoted REPLACE addressed to the WRONG id → content wins, redirect to the matching entry
+r8 = parse_ops('REPLACE S1 "FUNCTIONS": FUNCTIONS: compute_line_surcharge, quote_line, fuel_bp',
+               st7.ids(), st7.next_id)
+st7.apply(r8.ops)
+assert "REGION_SURCHARGE_CENTS" in st7.entries[0]["text"], st7.entries    # table intact
+assert "fuel_bp" in st7.entries[1]["text"], st7.entries                   # functions updated
+assert st7.last_report["redirected"] and st7.last_report["redirected"][0]["to"] == "S2"
+
+# quote matching nothing → blocked, state untouched
+before = st7.render()
+st7.apply(parse_ops('REPLACE S1 "NO_SUCH_CONTENT": overwrite attempt', st7.ids(), st7.next_id).ops)
+assert st7.render() == before and st7.last_report["blocked"], st7.last_report
+
+# quoted REMOVE misaddressed → redirects by content; table survives
+st8 = IntegrationState.from_snapshot(st7.snapshot())
+st8.apply(parse_ops('REMOVE S1 "FUNCTIONS"', st8.ids(), st8.next_id).ops)
+assert len(st8.entries) == 1 and "REGION_SURCHARGE_CENTS" in st8.entries[0]["text"], st8.entries
+
+# the P7 clobber regression (id-misaddressed quote-less REPLACE; observed n=2):
+# `REPLACE S2: FUNCTIONS=…` where S2 holds the table and S3 holds the functions list
+def _clobber_state(guard):
+    st = IntegrationState(guard=guard)
+    st.apply(parse_ops(
+        "ADD END: MODULES: ingest, transform, validate, routing, billing\n"
+        "ADD END: REGION_SURCHARGE_CENTS = {23: 988, 45: 210, 67: 455} 24-key region "
+        "surcharge table (pricing/region_tables.py)\n"
+        "ADD END: FUNCTIONS: compute_line_surcharge, quote_line, fuel_bp, dispatch",
+        st.ids(), st.next_id).ops)
+    return st
+
+_op_clobber = ("REPLACE S2: FUNCTIONS=compute_line_surcharge, quote_line, dispatch, "
+               "label, normalize_payload")
+
+st9 = _clobber_state("block")
+st9.apply(parse_ops(_op_clobber, st9.ids(), st9.next_id).ops)
+assert "REGION_SURCHARGE_CENTS" in st9.entries[1]["text"], st9.entries    # blocked: table survives
+assert st9.last_report["blocked"][0]["reason"] == "blocked_guard", st9.last_report
+
+st10 = _clobber_state("redirect")
+st10.apply(parse_ops(_op_clobber, st10.ids(), st10.next_id).ops)
+assert "REGION_SURCHARGE_CENTS" in st10.entries[1]["text"], st10.entries  # table survives
+assert "normalize_payload" in st10.entries[2]["text"], st10.entries       # write landed on FUNCTIONS
+
+st11 = _clobber_state("off")                                              # legacy semantics preserved
+st11.apply(parse_ops(_op_clobber, st11.ids(), st11.next_id).ops)
+assert st11.entries[1]["text"].startswith("FUNCTIONS="), st11.entries     # off → the old clobber
+
+# guard must NOT false-block a legitimate rewrite that shares vocabulary with its target
+st12 = _clobber_state("block")
+r12 = parse_ops("REPLACE S2: REGION_SURCHARGE_CENTS region surcharge table verified complete: "
+                "24 keys incl 23:988", st12.ids(), st12.next_id)
+st12.apply(r12.ops)
+assert "verified complete" in st12.entries[1]["text"], st12.entries
+assert not st12.last_report["blocked"], st12.last_report
+
+# guard ignores REPLACEs whose text is novel relative to every entry (new content, low overlap)
+st13 = _clobber_state("block")
+st13.apply(parse_ops("REPLACE S1: overview of scheduling behaviour across passes",
+                     st13.ids(), st13.next_id).ops)
+assert "overview" in st13.entries[0]["text"], st13.entries
+assert not st13.last_report["blocked"], st13.last_report
+
+print("editops OK (parser v2.1 + v3 content-addressing)")

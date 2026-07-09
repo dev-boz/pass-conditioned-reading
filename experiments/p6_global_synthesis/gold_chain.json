@@ -1,31 +1,54 @@
 {
-  "_doc": "Gold causal chain for the P6 global-synthesis test, authored from the synthetic Sandpiper fixture (390 turns, 16 segments; not vendored — see the P4 data card). Matchers use the P4 normalize() convention (lowercase; strip $ and digit-commas; hyphens->space). Authored 2026-06-16, verified against the source segments cited.",
-  "question": "Why did the launch end up going direct-to-consumer instead of through a retail partnership? Trace the sequence of constraints and events that led to that decision.",
-  "reference_chain_prose": "A hard manufacturing cap of 8,000 units (Halvorsen Assembly, Inkstone lead times, seg2-3) was set early. The team pursued a real retail launch with Meridian (seg6-7). But Meridian's buyer would only take a full-fleet holiday rollout requiring 30,000-40,000 units (plus a non-negotiable exclusivity clause) — far beyond the 8,000-unit cap, so the retail deal collapsed (seg9). Left with no retail partner and an unchanged cap (seg10), the team pivoted to a direct-to-consumer, invite-only model (seg11-12) built on a waitlist targeting ~25,000 signups and a Founders' Edition (seg13).",
-  "links": [
-    {"id": "L1_cap", "region": "head", "desc": "the 8,000-unit manufacturing cap (the binding constraint)",
-     "any": ["8000 units", "8000 unit", "8000", "halvorsen", "inkstone"]},
-    {"id": "L2_retail_pursued", "region": "head-mid", "desc": "pursued a retail launch via Meridian",
-     "any": ["meridian", "retail launch", "shelf presence", "retail partner", "full retail"]},
-    {"id": "L3_volume_mismatch", "region": "MID", "discriminating": true,
-     "desc": "DISCRIMINATING mid-doc causal hinge: retail collapsed because Meridian demanded full-fleet / holiday-density volume far above the 8,000 cap. Lives only in seg9.",
-     "any": ["full fleet", "holiday density"],
-     "matcher_note": "VERIFIED mid-doc-exclusive: 'full fleet' and 'holiday density' occur in seg9 ONLY. The bare numbers '30000'/'40000' were REJECTED as L3 matchers — they also appear in head (seg2) and tail (seg13,16) in unrelated contexts, so they'd give the dense head+tail baseline a false-positive hinge (a P4-style matcher trap). A numeric '30,000-40,000' claim counts toward L3 ONLY if it co-occurs with 'meridian'/'retail' in the same answer (runner implements the co-occurrence); the two phrases here are the clean primary signal. The runner MUST assert these L3 terms do NOT fire on the dense head+tail context."},
-    {"id": "L4_pivot_direct", "region": "mid-tail", "desc": "with no retail partner and unchanged cap, pivot to a direct / invite-only model",
-     "any": ["no retail partner", "direct model", "direct to consumer", "invite only", "invite-only"]},
-    {"id": "L5_founders_waitlist", "region": "tail", "desc": "the direct model: waitlist (~25,000) + Founders' Edition",
-     "any": ["founders edition", "waitlist", "25000", "creator seeding"]}
+  "_doc": "P6 salience-shaping gold. Supersedes the trace-design gold (invalidated pre-run; see PREFLIGHT-INVALIDATION.md). Score the FINAL INTEGRATION STATE (coupled_full, verbatim_only) or the single-pass BRIEF (dense) for presence of each detail. Headline = load-bearing TEST recorded preferentially over its prominence-matched CONTROL within coupled_full, with NO such gap in verbatim_only (the load-bearing x arm interaction). Matchers use P4 normalize() (lowercase; strip $ and digit-commas; hyphens->space). Authored 2026-06-16; all terms verified mid-exclusive (fire on source, absent from dense head+tail window AND from the seg15-16 recap). Guard (c) (absent from the Haiku Phase-A scaffold) verified against the frozen scaffold cache before scoring.",
+
+  "task": "You are building a single comprehensive analytical brief of a long product-launch planning conversation: the product and its positioning, the go-to-market strategy and how it evolved, the key constraints and figures, and the final decision and why.",
+  "task_note": "GENERIC and IDENTICAL across all arms. Deliberately NOT query-conditioned toward the details below: pointing the ask at them would let the QUERY supply salience instead of the SCAFFOLD, defeating the test. The only difference between coupled_full and verbatim_only is the presence of the Phase-A global scaffold.",
+
+  "details": [
+    {"id": "D1_timing", "role": "test", "load_bearing": true, "seg": 2, "airtime_in_seg": "1/24 turns (t38)",
+     "desc": "SMT-expansion TIMING: Halvorsen's Q1 SMT-line expansion yields units only Feb/March, so + Inkstone lead -> April for meaningful volume. The mechanism the whole Q2-deferral decision rests on; load-bearing globally, a dull single-clause specific locally inside the focal 'can Halvorsen scale' topic.",
+     "any": ["february or march", "february or early march", "february/march"],
+     "guard_terms": ["february or march", "february or early march", "february/march"],
+     "matcher_note": "Matches the granular TIMING specific, NOT the focal SMT topic (5/24, prominent -> would null by selection artifact). 'april'/'scale'/'smt' are NOT matchers: 'april'/'scale' leak via the seg16 recap, and the bare SMT topic legitimately appears in the scaffold as the global FRAME (that is the mechanism, not a leak). Guard (c) checks only the granular specific."},
+
+    {"id": "D2_68pct", "role": "test", "load_bearing": true, "seg": 9, "airtime_in_seg": "1/24 turns (t198)",
+     "desc": "The 300-unit / 20-flagship-store scenario's '68 percent margin penalty' -- the specific that closes the last retail-salvage option for good. Load-bearing (kills the negotiated retail version); dull single-clause specific buried in a number-wall.",
+     "any": ["68 percent margin penalty", "68 percent", "68%"],
+     "guard_terms": ["68 percent margin penalty", "68 percent", "68%"]},
+
+    {"id": "C1_pkgcogs", "role": "control", "load_bearing": false, "seg": 7, "airtime_in_seg": "1/24 turns (t156)",
+     "desc": "Packaging-COGS aside: at 8,000 units a $1/box difference is ~$8,000 in aggregate; risk of being ~$40,000 over. Prominence-matched (1/24) control for D1: equally dull/specific, NOT load-bearing to the channel decision.",
+     "any": ["one dollar difference per box", "eight thousand dollars", "forty thousand dollars", "dollar per box", "per box"],
+     "guard_terms": ["one dollar difference per box", "eight thousand dollars", "forty thousand dollars", "per box"]},
+
+    {"id": "C2_f7", "role": "control", "load_bearing": false, "seg": 7, "airtime_in_seg": "2/24 turns (t153-154)",
+     "desc": "F7 single-occurrence flavor: 'my grandmother was a typesetter at Garamond Press for 31 years'. Low-load-bearing brand-soul color; control for D2. (2/24 vs D2's 1/24 -> control slightly MORE prominent, a conservative bias against the interaction.)",
+     "any": ["typesetter at garamond", "garamond press", "garamond", "grandmother was a typesetter"],
+     "guard_terms": ["garamond", "typesetter at garamond"]}
   ],
+
+  "pairs": [["D1_timing", "C1_pkgcogs"], ["D2_68pct", "C2_f7"]],
+
   "scoring": {
-    "headline_metric": "L3_volume_mismatch present in the answer — the mid-doc causal hinge a head+tail/dense reader cannot reach. This is the discriminating result.",
-    "chain_completeness": "count of L1..L5 present (co-presence).",
-    "ordering": "for the coupled arms, whether L1->L3->L4->L5 appear in state-entry order (extend P4 Tier-3 co-presence+ordering; reported, not the headline).",
-    "note": "Score the ARM'S FINAL ANSWER text (a closing 'answer the question from your state/context' call), identically across coupled / verbatim-only / dense, so the comparison is apples-to-apples on output. Mechanical component match is the skeleton; an LLM-judge (Kiro Haiku) may give a secondary read on whether the causal 'because' is actually asserted, with the usual judge-confound caveat — it does not carry the verdict."
+    "unit": "Score the FINAL state.render() for the two state arms (coupled_full, verbatim_only) and the single-pass brief answer for dense. A detail is PRESENT iff any of its `any` variants is a normalized substring of the scored text.",
+    "headline": "load-bearing x arm INTERACTION: within coupled_full, (#test details present) > (#control details present); within verbatim_only, NO such gap. Equivalently, per pair [test,control]: coupled records test where verbatim does not, and neither distinguishes the control. Directional (n=2 pairs, single draw, temp 0) -- a mechanism signal, not an effect size.",
+    "secondary": "Raw presence table detail x arm. dense expected to lack all four (out-of-window) -- a coverage floor, not the headline.",
+    "judge_optional": "A Kiro/Haiku judge may read whether coupled_full's state USES D1/D2 as load-bearing (vs merely lists the number); caveated (judge confound), never the verdict."
   },
+
+  "guards": {
+    "a_fires_on_source": "each detail's `any` terms fire on the source segment (verified).",
+    "b_dense_floor": "each detail's `any` terms do NOT fire on the dense head+tail context, NOR in the seg15-16 recap (verified) -> dense is a true floor and the detail is not tail-reachable.",
+    "c_salience_not_coverage": "each detail's `guard_terms` (= the granular SCORING specifics, NOT the topic/frame) do NOT appear in the realized Haiku Phase-A scaffold view -> coupled_full cannot get the scored detail by re-reading the scaffold; its only possible edge is scaffold-supplied global salience. NOTE: the bare TOPIC (e.g. 'SMT scaling') legitimately appears in the scaffold as the global frame -- that IS the mechanism, not a leak; guard (c) deliberately checks only the discriminating specific. Verified PASS against scaffold_haiku.json (Kiro Haiku, frozen). Runner re-asserts; if a specific ever survives, hand-trim that compressed slice (compression quality is not under test) or drop the detail."
+  },
+
   "predicted_outcomes": {
-    "dense_headtail": "gets L1 (head) + L4/L5 (tail) but MISSES L3 (mid-doc) -> states 'they chose direct' without the real reason; chain incomplete at the hinge.",
-    "coupled_full": "coarse scaffold (Phase A) sees all segments compressed + verbatim mid-tiles deliver seg9 -> should contain L3 and the full ordered chain.",
-    "verbatim_only_no_scaffold": "the key ablation: coverage without the coarse global pass. Tests whether the scaffold specifically helps ASSEMBLE the distributed chain, vs tiling alone."
+    "salience_confirmed": "coupled_full records the TEST details (D1/D2) preferentially over the prominence-matched CONTROLs (C1/C2); verbatim_only shows no such preference.",
+    "null_reported": "verbatim_only shows the same test>control preference -> cold local reading already re-weights; the scaffold isn't the lever. Real signal -> E2'.",
+    "floor_too_weak": "coupled_full records neither tests nor controls (or no preference) -> the untrained 7B can't use a global frame to re-weight local salience at this scale. Real negative -> E2'.",
+    "prominence_confound": "if coupled records test>control but the pair turns out not prominence-matched on re-audit, report inconclusive, not a win.",
+    "dense_surprise": "if dense records a TEST detail, re-audit matcher specificity (guard b should prevent)."
   },
-  "differentiator_confirmed_iff": "coupled_full produces the full chain INCLUDING L3 (mid-doc hinge), dense misses L3, AND coupled_full >= verbatim_only on L3/chain-completeness (isolating the scaffold's contribution)."
+
+  "differentiator_confirmed_iff": "coupled_full shows a test>control recording gap that verbatim_only does not -- isolating the coarse global scaffold's salience-shaping contribution with coverage held constant."
 }

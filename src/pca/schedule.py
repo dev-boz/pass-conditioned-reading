@@ -92,3 +92,32 @@ def generate_views(doc_id: str, text: str, K: int, V: int, compressor) -> list[d
 
 def doc_token_count(text: str) -> int:
     return len(encode(text))
+
+
+def generate_slices(doc_id: str, text: str, K: int, V: int) -> list[dict]:
+    """Same deterministic schedule as generate_views, but WITHOUT compression —
+    emits the raw slice_text + target budget for each pass, so an external
+    compressor (e.g. Haiku subagents) can produce the views. Keeps the schedule
+    (slice lengths + hashed placement) reproducible in Python; delegates only C().
+    """
+    sents = split_sentences(text)
+    offs = _sentence_offsets(sents)
+    N = offs[-1]
+    lengths = _slice_lengths(N, K, V)
+    out = []
+    for k in range(1, K + 1):
+        slice_len = lengths[k - 1]
+        if slice_len >= N:
+            start, slice_text = 0, " ".join(sents)
+        else:
+            rng = random.Random(
+                int.from_bytes(hashlib.sha256(f"{doc_id}|{k}".encode()).digest()[:8], "big")
+            )
+            start = rng.randrange(0, N - slice_len + 1)
+            slice_text = slice_at(sents, offs, start, slice_len)
+        out.append({
+            "doc_id": doc_id, "k": k, "K": K, "slice_text": slice_text,
+            "slice_tokens": n_tokens(slice_text), "slice_start_token": start,
+            "doc_tokens": N, "target_tokens": V,
+        })
+    return out

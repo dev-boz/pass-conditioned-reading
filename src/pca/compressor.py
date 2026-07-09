@@ -12,7 +12,6 @@ Swapping backends is a config change: `compressor: extractive` vs
 from __future__ import annotations
 
 import math
-import os
 import re
 from collections import Counter
 
@@ -33,13 +32,19 @@ def _summary_prompt(text: str, target_tokens: int) -> str:
 
 
 def _check_summary(out: str) -> str:
-    """Shared output guard: reject quota/limit responses and too-short stubs."""
-    low = out.lower()
-    if any(s in low for s in ("session limit", "usage limit", "hit your", "rate limit",
-                              "out of credits", "insufficient credit")):
-        raise RuntimeError(f"compressor quota/limit response: {out[:120]}")
-    if len(out.split()) < 80:
-        raise RuntimeError(f"compressor output too short ({len(out.split())} words): {out[:120]}")
+    """Shared output guard: reject quota/limit responses and too-short stubs.
+
+    Quota/limit messages are always SHORT. A long, on-topic summary that merely
+    happens to contain a phrase like 'hit your target' is NOT a quota response, so
+    only screen for the quota phrases when the output is too short to be a summary.
+    """
+    words = len(out.split())
+    if words < 80:
+        low = out.lower()
+        if any(s in low for s in ("session limit", "usage limit", "hit your", "rate limit",
+                                  "out of credits", "insufficient credit")):
+            raise RuntimeError(f"compressor quota/limit response: {out[:120]}")
+        raise RuntimeError(f"compressor output too short ({words} words): {out[:120]}")
     return out
 
 
@@ -102,21 +107,22 @@ class LLMCompressor:
 
     name = "claude-haiku-4-5"
 
-    def __init__(self, model: str = "haiku",
-                 claude_exe: str = os.environ.get("CLAUDE_CLI", "claude"),
+    def __init__(self, model: str = "haiku", claude_exe: str | None = None,
                  timeout: int = 180, ssh_host: str | None = None,
-                 remote_claude: str = os.environ.get("REMOTE_CLAUDE_CLI", "claude")):
-        # claude_exe / remote_claude default to `claude` on PATH; set CLAUDE_CLI /
-        # REMOTE_CLAUDE_CLI to an absolute path if it is not on PATH (a
-        # non-interactive ssh shell often lacks it).
+                 remote_claude: str | None = None):
+        import os
+        from shutil import which
+
         self.model = model
-        self.claude_exe = claude_exe
+        # Defaults resolve from PATH / env, never a hardcoded per-user path
+        # (machine-portable, and no usernames/hosts baked into the repo).
+        self.claude_exe = claude_exe or os.environ.get("PCA_CLAUDE_EXE") or which("claude") or "claude"
         self.timeout = timeout
         # When ssh_host is set, the claude -p one-shot runs on the remote box over
         # its own OAuth pool (a second Pro-subscription quota); orchestration and
         # tiktoken counting stay local. Local path is unchanged when ssh_host=None.
         self.ssh_host = ssh_host
-        self.remote_claude = remote_claude
+        self.remote_claude = remote_claude or os.environ.get("PCA_REMOTE_CLAUDE") or "~/.local/bin/claude"
 
     def _cmd(self) -> list[str]:
         if self.ssh_host:
@@ -151,10 +157,13 @@ class KiroCompressor:
     name = "claude-haiku-4-5"   # same model family/label as the OAuth path (D29)
 
     def __init__(self, model: str = "claude-haiku-4.5",
-                 kiro_exe: str = os.environ.get("KIRO_CLI", "kiro-cli"),
+                 kiro_exe: str | None = None,
                  timeout: int = 180):
+        import os
+        from shutil import which
+
         self.model = model
-        self.kiro_exe = kiro_exe
+        self.kiro_exe = kiro_exe or os.environ.get("PCA_KIRO_EXE") or which("kiro-cli") or "kiro-cli"
         self.timeout = timeout
 
     def compress(self, text: str, target_tokens: int) -> str:

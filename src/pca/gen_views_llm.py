@@ -34,9 +34,8 @@ def main() -> None:
                          "kiro = Kiro CLI headless (credit-metered, needs KIRO_API_KEY in env)")
     ap.add_argument("--ssh-host", default=None,
                     help="route each claude -p call over ssh to this host (uses its OAuth pool)")
-    ap.add_argument("--remote-claude", default="claude",
-                    help="path to claude on the ssh host (use an absolute path if it is "
-                         "not on the non-interactive shell PATH)")
+    ap.add_argument("--remote-claude", default="/home/dev-boz/.local/bin/claude",
+                    help="path to claude on the ssh host")
     ap.add_argument("--seed", action="append", default=[],
                     help="extra completed views file(s) to add to the done-set without writing to them "
                          "(e.g. the main views_haiku.jsonl when this run writes a separate remote file)")

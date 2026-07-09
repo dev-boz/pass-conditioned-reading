@@ -1,0 +1,172 @@
+# P7 — split-unit (code domain). PRE-REGISTERED (PRE-REG.md + fixture/ committed before scoring).
+# Differential-recording reframe (eviction dead on this floor); money = coupled_full vs verbatim_only.
+schedule:
+  V: 3000           # per-view token budget; verbatim tile <= V
+  R: 5              # Phase-A coarse chunks (build_schedule emits 6 here)
+  stage_fracs: [0.34, 0.67]
+
+# Model registry (paths RELATIVE to the pca/ root). Select with run.py --model {7b,14b}.
+# On the Threadripper/1080Ti: use a CUDA llama.cpp build (see TRANSFER.md) and set n_gpu_layers=99.
+models:
+  7b:
+    server_exe: models/llamacpp/llama-server.exe
+    model_path: models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+    ctx: 16384
+    port: 8088
+    threads: 8        # override via --threads (e.g. 24 on the Threadripper)
+    n_gpu_layers: 0   # override via --ngl (99 = full offload; 7B Q4 ~4.7GB fits the 1080Ti)
+    max_tokens: 900
+  14b:                # download Qwen2.5-14B-Instruct-Q4_K_M.gguf into models/ (see TRANSFER.md)
+    server_exe: models/llamacpp/llama-server.exe
+    model_path: models/Qwen2.5-14B-Instruct-Q4_K_M.gguf
+    ctx: 16384
+    port: 8090
+    threads: 24
+    n_gpu_layers: 99  # ~8-9GB Q4 fits the 1080Ti's 11GB VRAM with the 16K KV cache
+    max_tokens: 900
+  14bx:               # P7 "A" variant: more OUTPUT room (ctx 32768 for the growing state) while
+    server_exe: models/llamacpp/llama-server.exe   # source-INPUT stays limited (V/fill unchanged)
+    model_path: models/Qwen2.5-14B-Instruct-Q4_K_M.gguf   # see FINDINGS-14B-OVERFLOW.md
+    ctx: 32768
+    port: 8094
+    threads: 24
+    n_gpu_layers: 99  # overridden by --ngl (32K KV is large -> needs deeper partial offload)
+    max_tokens: 900
+  72b:                # CLEAN capacity rung: same family as 7b/14b (Qwen2.5-Instruct), only scale.
+    api: openrouter   # PAID (~$2-3/matrix), needs credit. 32k ctx (our peak ~24k Qwen-tok -> no overflow).
+    api_model: qwen/qwen-2.5-72b-instruct
+    api_provider_order: [DeepInfra]   # PIN one upstream (fp8, 32k). OpenRouter's default fan-out to
+    api_allow_fallbacks: false        # Novita (bf16) gave spurious 400s/empty-choices that corrupted
+    ctx: 32768                        # the first run; pinning -> stable + consistent quant per seed.
+    max_tokens: 900
+  qwen3coder:         # FREE: Qwen3-Coder 480B-A35B (35B active), code-tuned, huge ctx. Confounded vs
+    api: openrouter   # the dense Qwen2.5 ladder (diff gen + MoE), but a strong generality/ceiling probe.
+    api_model: qwen/qwen3-coder:free
+    ctx: 32768
+    max_tokens: 900
+  qwen3next:          # FREE: Qwen3-Next 80B-A3B -- only 3B ACTIVE, not a meaningful capacity step for
+    api: openrouter   # compose; low priority.
+    api_model: qwen/qwen3-next-80b-a3b-instruct:free
+    ctx: 32768
+    max_tokens: 900
+  # --- CROSS-FAMILY generality probes (2026-06-23). NOT Qwen scale rungs. Question: does the P7
+  # record->retain->compose chain transfer to OTHER non-thinking families, or is it Qwen-specific?
+  # All verified non-thinking + pass the compose-ceiling. Interpret per-family zeros ONLY alongside
+  # op-following (mean ops/pass): a weak follower's 0 is protocol-transfer, not architecture. ---
+  llama70b:           # Meta, ~70B -- SCALE-MATCHED to 72b: the one clean cross-family comparison.
+    api: openrouter
+    api_model: meta-llama/llama-3.3-70b-instruct
+    api_provider_order: [DeepInfra]   # multi-provider model -> pin one (verified strong op-follower ~21)
+    api_allow_fallbacks: false
+    ctx: 32768
+    max_tokens: 900
+  gpt4omini:          # OpenAI -- strong op-follower (~20), records 23:988 already on pass 1. Single provider.
+    api: openrouter
+    api_model: openai/gpt-4o-mini
+    ctx: 32768
+    max_tokens: 900
+  novalite:           # Amazon -- strong op-follower (~12), records on pass 1. Single provider (Bedrock).
+    api: openrouter
+    api_model: amazon/nova-lite-v1
+    ctx: 32768
+    max_tokens: 900
+  commandr:           # Cohere -- moderate op-follower (~4). Single provider.
+    api: openrouter
+    api_model: cohere/command-r-08-2024
+    ctx: 32768
+    max_tokens: 900
+  mistral24b:         # Mistral, ~24B -- WEAK op-follower (~1/pass): expect protocol-transfer 0s, FOOTNOTE only.
+    api: openrouter
+    api_model: mistralai/mistral-small-3.2-24b-instruct
+    api_provider_order: [DeepInfra]
+    api_allow_fallbacks: false
+    ctx: 32768
+    max_tokens: 900
+  haiku45:            # Anthropic Claude Haiku 4.5 -- 6th CLEAN cross-family rung. Non-thinking (verified
+    api: openrouter   # reasoning_tokens=0), strong instruction-follower. Routes via Amazon Bedrock (pin it).
+    api_model: anthropic/claude-haiku-4.5
+    api_provider_order: [Amazon Bedrock]
+    api_allow_fallbacks: false
+    ctx: 32768
+    max_tokens: 900
+  # --- KIRO YOLO (2026-06-24): run via kiro-cli `chat --no-interactive` on the user's spare tokens.
+  # HEAVILY CONFOUNDED + QUARANTINED: Kiro's own agent harness wraps every call, and kiro exposes NO
+  # temperature/seed/max_tokens -> NOT comparable to the clean rungs, can't do the temp draws, never
+  # in the clean table. Existence/fingerprint curiosity only. `kiro_model` ids are kiro's own. ---
+  haiku45_kiro:
+    kiro: true
+    kiro_model: claude-haiku-4.5
+    ctx: 200000
+    max_tokens: 900
+  minimax_kiro:
+    kiro: true
+    kiro_model: minimax-m2.5
+    ctx: 196000
+    max_tokens: 900
+  glm_kiro:
+    kiro: true
+    kiro_model: glm-5
+    ctx: 200000
+    max_tokens: 900
+  deepseek_kiro:
+    kiro: true
+    kiro_model: deepseek-3.2
+    ctx: 164000
+    max_tokens: 900
+  qwen3coder_kiro:
+    kiro: true
+    kiro_model: qwen3-coder-next
+    ctx: 256000
+    max_tokens: 900
+  # --- AWARENESS GUT-CHECK (2026-06-25): within-kiro A/B for "minimal positional prompt vs none".
+  # p7raw agent strips kiro's agent layer (residual base persona is CONSTANT across both arms -> cancels
+  # in the delta); effort=low keeps it non-thinking. Baseline = no injection; aware arm adds --inject-pos
+  # in run.py. STILL CONFOUNDED vs the clean OpenRouter rungs (no temp/seed; kiro base persona) -> gut
+  # check only; clean confirmation belongs on the OpenRouter pipeline. Free on the user's kiro quota. ---
+  haiku_gc:                 # baseline arm: no injection
+    kiro: true
+    kiro_model: claude-haiku-4.5
+    kiro_agent: p7raw
+    kiro_effort: low
+    ctx: 200000
+    max_tokens: 900
+  haiku_gc_close:           # closing-side arm: permit derivation from present values
+    kiro: true
+    kiro_model: claude-haiku-4.5
+    kiro_agent: p7raw
+    kiro_effort: low
+    permit_derive: true
+    ctx: 200000
+    max_tokens: 900
+  haiku_gc_rec:             # recorder-side arm: salient pass/coverage line each pass
+    kiro: true
+    kiro_model: claude-haiku-4.5
+    kiro_agent: p7raw
+    kiro_effort: low
+    inject_pos: true
+    ctx: 200000
+    max_tokens: 900
+  # --- CLEAN OpenRouter lever A/B (2026-06-25): test the two levers on a FAILING baseline (novalite:
+  # 0/10 compose, 6/10 both-operands-held-no-formula) with full temp/seed control. Baseline = existing
+  # `novalite` n=10. Cheap (Nova-Lite). ---
+  novalite_pd:              # closing-side: permit derivation from present values
+    api: openrouter
+    api_model: amazon/nova-lite-v1
+    permit_derive: true
+    ctx: 32768
+    max_tokens: 900
+  novalite_rec:             # recorder-side: salient pass/coverage line each pass
+    api: openrouter
+    api_model: amazon/nova-lite-v1
+    inject_pos: true
+    ctx: 32768
+    max_tokens: 900
+default_model: 7b
+
+dense_baseline:
+  fill_tokens: 14000
+  head_frac: 0.5
+
+op_cap: 24
+# Canonical battery draws: deterministic temp-0 (P1-P5-comparable) + 3 sampled temp-0.7 seeds.
+draws: [[42, 0.0], [1, 0.7], [2, 0.7], [3, 0.7]]

@@ -29,6 +29,30 @@ Consequence: ADD validity is grammar-only; REPLACE/REMOVE carry the
 reference-validity signal. Parser v1 (strict anchors) rejected the naming
 convention wholesale and v2.0 (same-origin self-naming only) under-fixed it;
 archived numbers live under *_parser-v1 paths. See DECISIONS.md D15/D22.
+
+Parser/state v3 (2026-07-10, D31): content-addressed destructive ops — the
+harness answer to the P7 id-misaddressing clobber (`REPLACE S3: FUNCTIONS=…`
+overwrote the surcharge table held at S3; observed n=2, warm go-signal seed-2
+and fair-shot seed-42; CONSOLIDATED-FINDINGS §6.2, E2PRIME-CRITERION §1 P-A).
+
+    REPLACE <id> "<quote>": <text>   quote = verbatim fragment of the CURRENT
+    REMOVE <id> "<quote>"            text of the entry the op intends to hit
+
+Apply-time semantics (parse-time validity is UNCHANGED — metric continuity
+with v2.1):
+- Quoted op, quote matches the id'd entry's current text → apply.
+- Quoted op, quote does NOT match the target but matches exactly one other
+  entry → the content wins: REDIRECT to that entry (logged).
+- Quoted op, quote matches nothing (or several) → BLOCK (logged); state
+  untouched.
+- Quote-less REPLACE under guard mode ("block" | "redirect"; default "off" =
+  v2.1 behaviour): if the new text has near-zero overlap with the target's
+  current text but strongly matches exactly one other entry (Jaccard or
+  lead-token rule), the write is suspicious → block or redirect per mode.
+  Quote-less REMOVE carries no content signal and is never guarded.
+Both new syntactic forms were invalid under v2.1, so no archived valid op
+changes meaning. Guard thresholds are initial values validated by the P-A
+false-block replay before E2′ data generation.
 """
 
 from __future__ import annotations
@@ -38,8 +62,32 @@ from dataclasses import dataclass, field
 
 _OP_START = re.compile(r"^\s*(?:[-*]\s*|\d+[.)]\s*)?(ADD|REPLACE|REMOVE|NO_CHANGE)\b(.*)$", re.I)
 _ADD_RE = re.compile(r"^\s+(END|S\d+)\s*:\s*(.+)$", re.I | re.S)
-_REPLACE_RE = re.compile(r"^\s+(S\d+)\s*:\s*(.+)$", re.I | re.S)
-_REMOVE_RE = re.compile(r"^\s+(S\d+)\s*\.?\s*$", re.I)
+_REPLACE_RE = re.compile(r"^\s+(S\d+)\s*(?:\"([^\"]{4,160})\")?\s*:\s*(.+)$", re.I | re.S)
+_REMOVE_RE = re.compile(r"^\s+(S\d+)\s*(?:\"([^\"]{4,160})\")?\s*\.?\s*$", re.I)
+
+# v3 guard thresholds — initial values, validated by the P-A false-block replay
+# (E2PRIME-CRITERION §1) and frozen before E2′ data generation.
+GUARD_JACCARD_TARGET_MAX = 0.10   # below this vs the target, a quote-less REPLACE is a mismatch…
+GUARD_JACCARD_OTHER_MIN = 0.50    # …if some other single entry matches this strongly,
+GUARD_LEAD_JACCARD_MIN = 0.15     # …or shares the new text's lead token at this overlap.
+
+
+def _norm(s: str) -> str:
+    return re.sub(r"\s+", " ", s.strip().lower())
+
+
+def _words(s: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9_]{3,}", s.lower()))
+
+
+def _jaccard(a: str, b: str) -> float:
+    wa, wb = _words(a), _words(b)
+    return len(wa & wb) / len(wa | wb) if wa | wb else 0.0
+
+
+def _lead(s: str) -> str | None:
+    m = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]{2,})", s)
+    return m.group(1).upper() if m else None
 
 
 @dataclass
@@ -48,6 +96,7 @@ class ParseResult:
     candidate_lines: int = 0
     valid: int = 0
     invalid: list[str] = field(default_factory=list)
+    aliased: int = 0   # ops resolved via the v2.1 named-append alias map (P4 misplacement audit)
 
     @property
     def validity_rate(self) -> float:
@@ -95,15 +144,24 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
                     # entry; append, and remember the name it used
                     op = {"op": "ADD", "anchor": "END", "text": text}
                     alias[anchor] = would_be
+                    res.aliased += 1
                 pending.append(would_be)
         elif kw == "REPLACE":
             m2 = _REPLACE_RE.match(rest)
             if m2 and (r := resolve(m2.group(1).upper())) is not None:
-                op = {"op": "REPLACE", "id": r, "text": m2.group(2).strip()}
+                op = {"op": "REPLACE", "id": r, "text": m2.group(3).strip()}
+                if m2.group(2):
+                    op["quote"] = m2.group(2).strip()
+                if m2.group(1).upper() in alias:
+                    res.aliased += 1
         elif kw == "REMOVE":
             m2 = _REMOVE_RE.match(rest)
             if m2 and (r := resolve(m2.group(1).upper())) is not None:
                 op = {"op": "REMOVE", "id": r}
+                if m2.group(2):
+                    op["quote"] = m2.group(2).strip()
+                if m2.group(1).upper() in alias:
+                    res.aliased += 1
         if op:
             res.ops.append(op)
             res.valid += 1
@@ -113,11 +171,20 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
 
 
 class IntegrationState:
-    """Ordered entries with stable ids; apply() consumes parsed ops."""
+    """Ordered entries with stable ids; apply() consumes parsed ops.
 
-    def __init__(self) -> None:
+    v3: `guard` governs quote-less REPLACE ("off" = v2.1 semantics, "block"
+    refuses suspicious mismatched writes, "redirect" re-addresses them by
+    content). Quoted REPLACE/REMOVE are always content-verified regardless of
+    guard. Every apply() records per-op outcomes in `last_report`.
+    """
+
+    def __init__(self, guard: str = "off") -> None:
+        assert guard in ("off", "block", "redirect"), guard
         self.entries: list[dict] = []
         self._next = 1
+        self.guard = guard
+        self.last_report: dict = {"applied": 0, "blocked": [], "redirected": []}
 
     def ids(self) -> set[str]:
         return {e["id"] for e in self.entries}
@@ -131,8 +198,43 @@ class IntegrationState:
         self._next += 1
         return i
 
+    def _content_target(self, op: dict) -> tuple[dict | None, str | None]:
+        """v3 target resolution for a destructive op. Returns (entry, note):
+        note None = plain apply; "redirected_*" = apply to `entry` with logging;
+        entry None = do not apply (note is the block reason, or "missing_id")."""
+        target = next((e for e in self.entries if e["id"] == op["id"]), None)
+        if target is None:
+            return None, "missing_id"
+        quote = op.get("quote")
+        if quote:
+            qn = _norm(quote)
+            if qn and qn in _norm(target["text"]):
+                return target, None
+            matches = [e for e in self.entries if qn in _norm(e["text"])]
+            if len(matches) == 1:
+                return matches[0], "redirected_quote"
+            return None, "blocked_quote_mismatch"
+        if op["op"] == "REPLACE" and self.guard != "off":
+            if _jaccard(op["text"], target["text"]) < GUARD_JACCARD_TARGET_MAX:
+                others = [e for e in self.entries if e is not target]
+                strong = [e for e in others
+                          if _jaccard(op["text"], e["text"]) >= GUARD_JACCARD_OTHER_MIN]
+                lead = _lead(op["text"])
+                leadm = [e for e in others
+                         if lead and _lead(e["text"]) == lead and _lead(target["text"]) != lead
+                         and _jaccard(op["text"], e["text"]) >= GUARD_LEAD_JACCARD_MIN]
+                cand = strong or leadm
+                if len(cand) == 1:
+                    if self.guard == "redirect":
+                        return cand[0], "redirected_guard"
+                    return None, "blocked_guard"
+                if cand:
+                    return None, "blocked_guard_ambiguous"
+        return target, None
+
     def apply(self, ops: list[dict]) -> int:
         applied = 0
+        report: dict = {"applied": 0, "blocked": [], "redirected": []}
         for op in ops:
             if op["op"] == "NO_CHANGE":
                 continue
@@ -146,16 +248,22 @@ class IntegrationState:
                         continue
                     self.entries.insert(pos + 1, entry)
                 applied += 1
-            elif op["op"] == "REPLACE":
-                for e in self.entries:
-                    if e["id"] == op["id"]:
-                        e["text"] = op["text"]
-                        applied += 1
-                        break
-            elif op["op"] == "REMOVE":
-                n0 = len(self.entries)
-                self.entries = [e for e in self.entries if e["id"] != op["id"]]
-                applied += n0 - len(self.entries)
+            elif op["op"] in ("REPLACE", "REMOVE"):
+                target, note = self._content_target(op)
+                if target is None:
+                    if note != "missing_id":
+                        report["blocked"].append({"op": dict(op), "reason": note})
+                    continue
+                if note:
+                    report["redirected"].append(
+                        {"from": op["id"], "to": target["id"], "via": note, "op": dict(op)})
+                if op["op"] == "REPLACE":
+                    target["text"] = op["text"]
+                else:
+                    self.entries = [e for e in self.entries if e is not target]
+                applied += 1
+        report["applied"] = applied
+        self.last_report = report
         return applied
 
     def render(self) -> str:
@@ -167,8 +275,8 @@ class IntegrationState:
         return {"entries": [dict(e) for e in self.entries], "next": self._next}
 
     @classmethod
-    def from_snapshot(cls, snap: dict) -> "IntegrationState":
-        st = cls()
+    def from_snapshot(cls, snap: dict, guard: str = "off") -> "IntegrationState":
+        st = cls(guard=guard)
         st.entries = [dict(e) for e in snap["entries"]]
         st._next = snap["next"]
         return st
