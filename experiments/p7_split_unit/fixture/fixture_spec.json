@@ -1,6 +1,8 @@
 {
  "_doc": "P7 split-unit fixture. Ground truth computed here; the host doc embeds the same table/constant. Answer = REGION_SURCHARGE_CENTS[QUERIED_CODE] + RECONCILIATION_ADDER_CENTS.",
+ "fixture_version": 2,
  "seed": 70707,
+ "seed_v2_stream": 70708,
  "queried_code": 23,
  "table": {
   "10": 314,
@@ -106,20 +108,48 @@
    "account.updated": "crimson_summit",
    "account.cancelled": "crimson_lantern",
    "account.failed": "ivory_cedar"
+  },
+  "v2_paths": {
+   "relevant": "routing/router.py",
+   "arbitrary": "routing/labels.py",
+   "note": "v2: same well-represented category (routing/), sibling modules — category representation matched by construction (was: singleton dispatch/ and ui/ in v1)"
   }
  },
+ "positive_control": {
+  "_doc": "Relevance-control v2 fix 1: instrument-sensitivity control. Small, behavior-governing, brief-central, in the well-represented queue/ category. Sensitivity = >= Tier 1 in >= 4/5 seeds under neutral+v2 (see RELEVANCE-CONTROL-V2.md). Attribution requires STAGE_ORDER / queue/pipeline.py / run_pipeline — generic 'queue' category mentions do not count.",
+  "decl": "STAGE_ORDER = [",
+  "module": "queue/pipeline.py",
+  "stages": [
+   "intake",
+   "inspect",
+   "standardize",
+   "consolidate",
+   "publish"
+  ],
+  "consumer": "run_pipeline"
+ },
  "positions": {
-  "n_blocks": 105,
+  "n_blocks": 106,
   "fragment1_block": 22,
-  "control_block": 46,
-  "relevant_block": 64,
-  "alias_block": 71,
-  "fragment2_block": 79,
-  "total_tokens": 65495
+  "pc_block": 40,
+  "control_block": 47,
+  "relevant_block": 65,
+  "alias_block": 72,
+  "fragment2_block": 80,
+  "phase_a_chunks": {
+   "f1": 1,
+   "pc": 2,
+   "ctrl": 2,
+   "rel": 3,
+   "alias": 3,
+   "f2": 3
+  },
+  "total_tokens": 65781
  },
  "fragment1_text": "# ===== module: pricing/region_tables.py =====\n\"\"\"Region surcharge schedule. Values are set by the Q3 ops reconciliation review\nand are NOT derived from distance or zone — do not \"simplify\" them. See RFC-2231.\"\"\"\n\nREGION_SURCHARGE_CENTS = {\n    10: 314,\n    14: 804,\n    17: 883,\n    19: 808,\n    23: 988,\n    25: 271,\n    26: 487,\n    33: 271,\n    38: 405,\n    39: 279,\n    42: 915,\n    45: 193,\n    47: 381,\n    55: 878,\n    59: 510,\n    64: 717,\n    67: 829,\n    70: 435,\n    77: 325,\n    82: 625,\n    91: 793,\n    94: 953,\n    95: 161,\n    98: 181,\n}\n\ndef surcharge_cents(region_code):\n    \"\"\"Raw per-region surcharge in cents (pre-reconciliation).\"\"\"\n    return REGION_SURCHARGE_CENTS[region_code]\n",
  "control_text": "# ===== module: carrier/fuel_tables.py =====\n\"\"\"Carrier fuel surcharge in basis points by carrier code (weekly ops setting).\"\"\"\n\nCARRIER_FUEL_BP = {\n    109: 86,\n    216: 39,\n    217: 86,\n    304: 62,\n    322: 60,\n    363: 76,\n    414: 44,\n    687: 31,\n    702: 17,\n    783: 61,\n    916: 43,\n    919: 51,\n}\n\ndef fuel_bp(carrier_code):\n    return CARRIER_FUEL_BP[carrier_code]\n",
- "relevant_text": "# ===== module: dispatch/router.py =====\n\"\"\"Event-to-handler routing: dispatch() resolves and invokes the handler for each event.\"\"\"\n\nEVENT_DISPATCH = {\n    \"order.created\": \"expire_shipment\",\n    \"order.updated\": \"persist_webhook\",\n    \"order.cancelled\": \"snapshot_ledger\",\n    \"order.failed\": \"rollback_record\",\n    \"payment.created\": \"settle_queue\",\n    \"payment.updated\": \"expire_webhook\",\n    \"payment.cancelled\": \"reindex_webhook\",\n    \"payment.failed\": \"escalate_webhook\",\n    \"shipment.created\": \"void_txn\",\n    \"shipment.updated\": \"flush_shipment\",\n    \"shipment.cancelled\": \"settle_webhook\",\n    \"shipment.failed\": \"emit_alert\",\n    \"invoice.created\": \"enqueue_txn\",\n    \"invoice.updated\": \"notify_ledger\",\n    \"invoice.cancelled\": \"replay_invoice\",\n    \"invoice.failed\": \"replay_webhook\",\n    \"refund.created\": \"settle_ledger\",\n    \"refund.updated\": \"escalate_queue\",\n    \"refund.cancelled\": \"provision_ledger\",\n    \"refund.failed\": \"escalate_ledger\",\n    \"account.created\": \"flush_webhook\",\n    \"account.updated\": \"void_shipment\",\n    \"account.cancelled\": \"enqueue_queue\",\n    \"account.failed\": \"snapshot_invoice\",\n}\n\ndef dispatch(event, payload):\n    handler = EVENT_DISPATCH[event]   # which handler runs for this event\n    return HANDLERS[handler](payload)\n",
- "aliases_text": "# ===== module: ui/labels.py =====\n\"\"\"Cosmetic display labels shown next to each event in the activity feed.\"\"\"\n\nDISPLAY_LABELS = {\n    \"order.created\": \"jade_ridge\",\n    \"order.updated\": \"teal_ember\",\n    \"order.cancelled\": \"crimson_harbor\",\n    \"order.failed\": \"rust_lantern\",\n    \"payment.created\": \"crimson_vale\",\n    \"payment.updated\": \"olive_delta\",\n    \"payment.cancelled\": \"cobalt_anchor\",\n    \"payment.failed\": \"indigo_anchor\",\n    \"shipment.created\": \"slate_harbor\",\n    \"shipment.updated\": \"ivory_summit\",\n    \"shipment.cancelled\": \"ash_lantern\",\n    \"shipment.failed\": \"beige_willow\",\n    \"invoice.created\": \"rust_quartz\",\n    \"invoice.updated\": \"umber_harbor\",\n    \"invoice.cancelled\": \"ash_willow\",\n    \"invoice.failed\": \"crimson_ember\",\n    \"refund.created\": \"umber_fjord\",\n    \"refund.updated\": \"plum_harbor\",\n    \"refund.cancelled\": \"olive_ridge\",\n    \"refund.failed\": \"plum_summit\",\n    \"account.created\": \"slate_anchor\",\n    \"account.updated\": \"crimson_summit\",\n    \"account.cancelled\": \"crimson_lantern\",\n    \"account.failed\": \"ivory_cedar\",\n}\n\ndef label(event):\n    return DISPLAY_LABELS.get(event, event)\n",
- "fragment2_text": "# ===== module: fulfillment/line_quote.py =====\nfrom pricing.region_tables import REGION_SURCHARGE_CENTS\n\n# Fixed reconciliation adder applied to every audited line (Q3 compliance, RFC-2231).\nRECONCILIATION_ADDER_CENTS = 1365\n\ndef compute_line_surcharge(region_code):\n    \"\"\"Total per-line surcharge in cents for an audited shipment to `region_code`:\n    the region's base surcharge plus the fixed reconciliation adder.\"\"\"\n    base = REGION_SURCHARGE_CENTS[region_code]\n    return base + RECONCILIATION_ADDER_CENTS\n\ndef quote_line(item, region_code):\n    subtotal = item.unit_price * item.qty\n    surcharge = compute_line_surcharge(region_code)   # e.g. region 23\n    return subtotal + surcharge\n"
+ "relevant_text": "# ===== module: routing/router.py =====\n\"\"\"Event-to-handler routing: dispatch() resolves and invokes the handler for each event.\"\"\"\n\nEVENT_DISPATCH = {\n    \"order.created\": \"expire_shipment\",\n    \"order.updated\": \"persist_webhook\",\n    \"order.cancelled\": \"snapshot_ledger\",\n    \"order.failed\": \"rollback_record\",\n    \"payment.created\": \"settle_queue\",\n    \"payment.updated\": \"expire_webhook\",\n    \"payment.cancelled\": \"reindex_webhook\",\n    \"payment.failed\": \"escalate_webhook\",\n    \"shipment.created\": \"void_txn\",\n    \"shipment.updated\": \"flush_shipment\",\n    \"shipment.cancelled\": \"settle_webhook\",\n    \"shipment.failed\": \"emit_alert\",\n    \"invoice.created\": \"enqueue_txn\",\n    \"invoice.updated\": \"notify_ledger\",\n    \"invoice.cancelled\": \"replay_invoice\",\n    \"invoice.failed\": \"replay_webhook\",\n    \"refund.created\": \"settle_ledger\",\n    \"refund.updated\": \"escalate_queue\",\n    \"refund.cancelled\": \"provision_ledger\",\n    \"refund.failed\": \"escalate_ledger\",\n    \"account.created\": \"flush_webhook\",\n    \"account.updated\": \"void_shipment\",\n    \"account.cancelled\": \"enqueue_queue\",\n    \"account.failed\": \"snapshot_invoice\",\n}\n\ndef dispatch(event, payload):\n    handler = EVENT_DISPATCH[event]   # which handler runs for this event\n    return HANDLERS[handler](payload)\n",
+ "aliases_text": "# ===== module: routing/labels.py =====\n\"\"\"Cosmetic display labels shown next to each routed event in the activity feed.\"\"\"\n\nDISPLAY_LABELS = {\n    \"order.created\": \"jade_ridge\",\n    \"order.updated\": \"teal_ember\",\n    \"order.cancelled\": \"crimson_harbor\",\n    \"order.failed\": \"rust_lantern\",\n    \"payment.created\": \"crimson_vale\",\n    \"payment.updated\": \"olive_delta\",\n    \"payment.cancelled\": \"cobalt_anchor\",\n    \"payment.failed\": \"indigo_anchor\",\n    \"shipment.created\": \"slate_harbor\",\n    \"shipment.updated\": \"ivory_summit\",\n    \"shipment.cancelled\": \"ash_lantern\",\n    \"shipment.failed\": \"beige_willow\",\n    \"invoice.created\": \"rust_quartz\",\n    \"invoice.updated\": \"umber_harbor\",\n    \"invoice.cancelled\": \"ash_willow\",\n    \"invoice.failed\": \"crimson_ember\",\n    \"refund.created\": \"umber_fjord\",\n    \"refund.updated\": \"plum_harbor\",\n    \"refund.cancelled\": \"olive_ridge\",\n    \"refund.failed\": \"plum_summit\",\n    \"account.created\": \"slate_anchor\",\n    \"account.updated\": \"crimson_summit\",\n    \"account.cancelled\": \"crimson_lantern\",\n    \"account.failed\": \"ivory_cedar\",\n}\n\ndef label(event):\n    return DISPLAY_LABELS.get(event, event)\n",
+ "fragment2_text": "# ===== module: fulfillment/line_quote.py =====\nfrom pricing.region_tables import REGION_SURCHARGE_CENTS\n\n# Fixed reconciliation adder applied to every audited line (Q3 compliance, RFC-2231).\nRECONCILIATION_ADDER_CENTS = 1365\n\ndef compute_line_surcharge(region_code):\n    \"\"\"Total per-line surcharge in cents for an audited shipment to `region_code`:\n    the region's base surcharge plus the fixed reconciliation adder.\"\"\"\n    base = REGION_SURCHARGE_CENTS[region_code]\n    return base + RECONCILIATION_ADDER_CENTS\n\ndef quote_line(item, region_code):\n    subtotal = item.unit_price * item.qty\n    surcharge = compute_line_surcharge(region_code)   # e.g. region 23\n    return subtotal + surcharge\n",
+ "pc_text": "# ===== module: queue/pipeline.py =====\n\"\"\"End-to-end processing pipeline: run_pipeline() drives every batch through\nthe stages in STAGE_ORDER, in order.\"\"\"\n\nSTAGE_ORDER = ['intake', 'inspect', 'standardize', 'consolidate', 'publish']\n\ndef run_pipeline(batch):\n    \"\"\"Process a batch through each pipeline stage, in STAGE_ORDER order.\"\"\"\n    for stage in STAGE_ORDER:\n        batch = STAGE_HANDLERS[stage](batch)\n    return batch\n\ndef stage_intake(batch):\n    return [x for x in (batch or []) if getattr(x, 'weight', 7) >= 7]\n\ndef stage_inspect(batch):\n    return [x for x in (batch or []) if getattr(x, 'weight', 4) >= 4]\n\ndef stage_standardize(batch):\n    return [x for x in (batch or []) if getattr(x, 'weight', 4) >= 4]\n\ndef stage_consolidate(batch):\n    return [x for x in (batch or []) if getattr(x, 'weight', 8) >= 8]\n\ndef stage_publish(batch):\n    return [x for x in (batch or []) if getattr(x, 'weight', 6) >= 6]\n\nSTAGE_HANDLERS = {s: globals()[f'stage_{s}'] for s in STAGE_ORDER}\n"
 }

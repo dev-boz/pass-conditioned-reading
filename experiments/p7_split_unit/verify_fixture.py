@@ -92,6 +92,30 @@ def main():
     print(f"(C2) split real: fragment-1 in Phase-B tile(s) {f1_tiles}, fragment-2 in {f2_tiles}, "
           f"no overlap; tile gap = {gap}  PASS")
 
+    # ---- (D) v2 relevance-control content survives realized Phase-A views (fixture v2 only)
+    if spec.get("fixture_version", 1) >= 2:
+        pc_decl = spec["positive_control"]["decl"]                 # "STAGE_ORDER = ["
+        pc_chunks = [i for i, v in enumerate(A_views) if pc_decl in v]
+        rel_decl = spec["relevance_control"]["relevant_decl"]      # "EVENT_DISPATCH = {"
+        arb_decl = spec["relevance_control"]["arbitrary_decl"]     # "DISPLAY_LABELS = {"
+        rel_chunks = [i for i, v in enumerate(A_views) if rel_decl in v]
+        arb_chunks = [i for i, v in enumerate(A_views) if arb_decl in v]
+        assert pc_chunks, "(D) positive control did NOT survive into any Phase-A view"
+        assert rel_chunks and arb_chunks, "(D) a pair table did not survive Phase-A"
+        assert set(rel_chunks) & set(arb_chunks), \
+            "(D) pair tables not co-present in a shared Phase-A view (state-pressure match broken)"
+        assert not (set(pc_chunks) & set(rel_chunks)), "(D) PC shares a Phase-A chunk with the pair"
+        # 24/24 mappings survive for both pair tables (the v1 property, re-asserted on v2 paths)
+        allA = "\n".join(A_views)
+        rel_pairs = sum(1 for k, v in spec["relevance_control"]["relevant_table"].items()
+                        if f'"{k}": "{v}"' in allA)
+        arb_pairs = sum(1 for k, v in spec["relevance_control"]["arbitrary_table"].items()
+                        if f'"{k}": "{v}"' in allA)
+        assert rel_pairs == 24 and arb_pairs == 24, \
+            f"(D) pair mappings lost in compression: relevant {rel_pairs}/24, arbitrary {arb_pairs}/24"
+        print(f"(D) v2 content survives Phase-A: PC in chunk(s) {pc_chunks}, pair co-present in "
+              f"chunk(s) {sorted(set(rel_chunks) & set(arb_chunks))}, mappings 24/24 + 24/24  PASS")
+
     print(f"\nALL GUARDS PASS. Ground truth: compute_line_surcharge({qcode}) = "
           f"{spec['table_value_for_queried']} + {adder} = {spec['ground_truth_answer']}")
 

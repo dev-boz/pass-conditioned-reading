@@ -69,6 +69,13 @@ def split_by_doc(rows: list[dict], eval_frac: float, seed: int) -> tuple[list[di
 def main() -> None:
     args = parse_args()
     import torch
+    # PyTorch 2.13 native Triton dispatches require a C compiler to JIT-compile
+    # the Triton CUDA driver shim (CudaUtils).  On machines without gcc/clang this
+    # raises RuntimeError at the first bmm call (Qwen2 RoPE outer-product path).
+    # Deregister the Triton override so aten::bmm falls back to the regular CUDA
+    # kernel.  This is the minimal fix; no other behaviour changes.
+    from torch._native.registry import deregister_op_overrides
+    deregister_op_overrides(disable_dsl_names=["triton"])
     from datasets import Dataset
     from peft import LoraConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer

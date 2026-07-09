@@ -53,6 +53,15 @@ FRAG_CTRL_BLOCK_FRAC = 0.45     # recordability CONTROL table (a second arbitrar
 #       surcharge table). Controls the int-vs-str surface-form confound.
 FRAG_REL_BLOCK_FRAC = 0.62      # relevant dispatch table  (chunk 3)
 FRAG_ALIAS_BLOCK_FRAC = 0.68    # arbitrary alias table    (chunk 3, same pass as relevant)
+# FIXTURE v2 (RELEVANCE-CONTROL-V2.md, 2026-07-10): (a) the pair moves out of singleton
+# categories into the SAME well-represented category (routing/) as sibling modules — category
+# representation matched by construction; (b) a POSITIVE CONTROL (STAGE_ORDER, small,
+# behavior-governing, brief-central) is inserted in the represented queue/ category at ~0.35,
+# its own Phase-A chunk. All new content draws from a SEPARATE RNG stream (SEED+1) consumed
+# after every v1 draw, so v1 values (probe, ctrl, pair contents, filler) stay byte-identical;
+# asserted against the previous fixture_spec.json at generation time.
+FIXTURE_VERSION = 2
+FRAG_PC_BLOCK_FRAC = 0.35       # positive control (queue/pipeline.py), own Phase-A chunk
 
 rng = random.Random(SEED)
 
@@ -95,6 +104,18 @@ _labels = rng.sample([f"{a}_{n}" for a in _LADJ for n in _LNOUN], len(EVENTS))  
 DISPATCH = dict(zip(EVENTS, _handlers))      # event -> arbitrary handler (NON-derivable; control flow)
 ALIAS_TABLE = dict(zip(EVENTS, _labels))     # event -> arbitrary cosmetic label (NON-derivable; display)
 
+# ---- v2 additions: SEPARATE stream (SEED+1), consumed after every v1 draw above ----------
+rng2 = random.Random(SEED + 1)
+# Positive-control stage names: order fixed (plausible pipeline shape), exact names drawn per
+# slot (non-derivable without reading). Pool words avoid the filler category/verb name pools.
+_STAGE_POOLS = [("intake", "receive", "collect"),
+                ("screen", "triage", "inspect"),
+                ("convert", "standardize", "reshape"),
+                ("consolidate", "settle", "balance"),
+                ("publish", "finalize", "handoff")]
+STAGE_KEYS = [rng2.choice(p) for p in _STAGE_POOLS]
+_STAGE_CONSTS = [rng2.randint(2, 9) for _ in STAGE_KEYS]
+
 
 def fragment1_text() -> str:
     """The arbitrary table, embedded in a mundane pricing-constants module. Multi-line dict
@@ -136,7 +157,7 @@ def relevant_text() -> str:
     """RELEVANT table: event->handler dispatch routing. Relevance carried by CONTEXT — it is consumed
     by dispatch(), which selects and runs the handler for each event (control flow). A faithful brief
     of the codebase's behaviour must capture which events route to which handlers."""
-    lines = ["# ===== module: dispatch/router.py =====",
+    lines = ["# ===== module: routing/router.py =====",
              '"""Event-to-handler routing: dispatch() resolves and invokes the handler for each event."""',
              "",
              "EVENT_DISPATCH = {"]
@@ -155,8 +176,8 @@ def aliases_text() -> str:
     """ARBITRARY table matched to EVENT_DISPATCH on every axis (same event keys, arbitrary
     non-derivable real-word values, size/form/position) EXCEPT relevance: these are cosmetic display
     labels consumed only by a trivial label() — no behavioural consequence."""
-    lines = ["# ===== module: ui/labels.py =====",
-             '"""Cosmetic display labels shown next to each event in the activity feed."""',
+    lines = ["# ===== module: routing/labels.py =====",
+             '"""Cosmetic display labels shown next to each routed event in the activity feed."""',
              "",
              "DISPLAY_LABELS = {"]
     for k, v in ALIAS_TABLE.items():
@@ -166,6 +187,32 @@ def aliases_text() -> str:
               "def label(event):",
               "    return DISPLAY_LABELS.get(event, event)",
               ""]
+    return "\n".join(lines)
+
+
+def pc_text() -> str:
+    """POSITIVE CONTROL (relevance-control v2, fix 1): a small, behavior-governing,
+    brief-central structure in a WELL-REPRESENTED category (queue/). STAGE_ORDER is the
+    pipeline's stage sequence and run_pipeline() drives every batch through it — the most
+    brief-worthy fact in a "what does this codebase do" brief. Probe-blind: no relation to
+    any planted probe. Instrument-sensitivity target: >= Tier 1 under neutral+v2."""
+    lines = ["# ===== module: queue/pipeline.py =====",
+             '"""End-to-end processing pipeline: run_pipeline() drives every batch through',
+             'the stages in STAGE_ORDER, in order."""',
+             "",
+             f"STAGE_ORDER = {STAGE_KEYS!r}",
+             "",
+             "def run_pipeline(batch):",
+             '    """Process a batch through each pipeline stage, in STAGE_ORDER order."""',
+             "    for stage in STAGE_ORDER:",
+             "        batch = STAGE_HANDLERS[stage](batch)",
+             "    return batch",
+             ""]
+    for s, c in zip(STAGE_KEYS, _STAGE_CONSTS):
+        lines += [f"def stage_{s}(batch):",
+                  f"    return [x for x in (batch or []) if getattr(x, 'weight', {c}) >= {c}]",
+                  ""]
+    lines += ["STAGE_HANDLERS = {s: globals()[f'stage_{s}'] for s in STAGE_ORDER}", ""]
     return "\n".join(lines)
 
 
@@ -235,8 +282,25 @@ def filler_module(idx: int) -> str:
     return "\n".join(out)
 
 
-def main():
-    # Build a sequence of filler blocks; reserve two slots for the fragments.
+def _phase_a_chunk_of(chunksA: list[dict], turn: int) -> int | None:
+    for i, p in enumerate(chunksA):
+        if p["turn_lo"] <= turn <= p["turn_hi"]:
+            return i
+    return None
+
+
+_RNG_STATE_AT_FILLER: tuple | None = None
+
+
+def _build_with_inserts(pc_offset: int = 0):
+    """Filler blocks + planted inserts. pc_offset shifts only the PC insertion index —
+    the pre-registered mechanical nudge used if a Phase-A chunk guard fails. The filler
+    continues the module-level v1 stream exactly where v1's main() consumed it (state
+    snapshot/restore keeps retries deterministic AND filler bytes identical to v1)."""
+    global _RNG_STATE_AT_FILLER
+    if _RNG_STATE_AT_FILLER is None:
+        _RNG_STATE_AT_FILLER = rng.getstate()
+    rng.setstate(_RNG_STATE_AT_FILLER)
     blocks: list[str] = []
     idx = 0
     while sum(n_tokens(b) for b in blocks) < TARGET_TOKENS:
@@ -244,6 +308,7 @@ def main():
     n = len(blocks)
     # insert in ascending position order, tracking the shift each prior insert causes
     inserts = sorted([(max(1, int(n * FRAG1_BLOCK_FRAC)), "f1", fragment1_text()),
+                      (max(1, int(n * FRAG_PC_BLOCK_FRAC) + pc_offset), "pc", pc_text()),
                       (int(n * FRAG_CTRL_BLOCK_FRAC), "ctrl", control_text()),
                       (int(n * FRAG_REL_BLOCK_FRAC), "rel", relevant_text()),
                       (int(n * FRAG_ALIAS_BLOCK_FRAC), "alias", aliases_text()),
@@ -252,19 +317,69 @@ def main():
     for shift, (pos, tag, text) in enumerate(inserts):
         blocks.insert(pos + shift, text)
         final_pos[tag] = pos + shift
+    return blocks, final_pos
 
-    # Emit as turn-like records (one block == one "turn"); seg = coarse group of ~24 blocks.
-    recs = []
-    for i, b in enumerate(blocks):
-        recs.append({"turn": i, "seg": i // 24 + 1, "role": "code", "content": b})
+
+def main():
+    # v2 GUARDS use the real Phase-A chunking (build_schedule), not the cosmetic seg field.
+    import yaml
+    from pca.planted import build_schedule
+    cfg = yaml.safe_load((HERE.parent / "config.yaml").read_text(encoding="utf-8"))["schedule"]
+
+    blocks = final_pos = recs = chunksA = None
+    for pc_offset in (0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6):
+        blocks, final_pos = _build_with_inserts(pc_offset)
+        recs = [{"turn": i, "seg": i // 24 + 1, "role": "code", "content": b}
+                for i, b in enumerate(blocks)]
+        turns = [{"turn": r["turn"], "seg": r["seg"], "text": r["content"],
+                  "tokens": n_tokens(r["content"])} for r in recs]
+        sch = build_schedule(turns, cfg["V"], cfg["R"], tuple(cfg["stage_fracs"]))
+        chunksA = [p for p in sch if p["phase"] == "A"]
+        ch = {t: _phase_a_chunk_of(chunksA, final_pos[t]) for t in final_pos}
+        pair_ok = ch["rel"] is not None and ch["rel"] == ch["alias"]
+        pc_ok = ch["pc"] is not None and ch["pc"] not in (ch["rel"], ch["f1"], ch["f2"])
+        if pair_ok and pc_ok:
+            if pc_offset:
+                print(f"guard nudge applied: pc_offset={pc_offset:+d}")
+            break
+    else:
+        raise AssertionError(f"v2 chunk guards unsatisfiable within nudge range: {ch}")
+
+    # --- v2 guard block (pre-registered; all failures are hard errors) -----------------
+    n_final = len(blocks)
+    # ±0.02 applies to the five v1 targets (pre-reg); the PC is "≈0.35" and owns the nudge
+    # slack — bounded loosely to its intended region instead.
+    targets = {"f1": FRAG1_BLOCK_FRAC, "ctrl": FRAG_CTRL_BLOCK_FRAC,
+               "rel": FRAG_REL_BLOCK_FRAC, "alias": FRAG_ALIAS_BLOCK_FRAC, "f2": FRAG2_BLOCK_FRAC}
+    for tag, tf in targets.items():
+        frac = final_pos[tag] / n_final
+        assert abs(frac - tf) <= 0.02, f"position guard FAIL {tag}: {frac:.3f} vs {tf}"
+    pc_frac = final_pos["pc"] / n_final
+    assert 0.25 <= pc_frac <= 0.45, f"pc position out of region: {pc_frac:.3f}"
+    for tag in ("f1", "f2"):
+        frac = final_pos[tag] / n_final
+        assert 0.11 < frac < 0.89, f"mid-exclusivity guard FAIL {tag}: {frac:.3f}"
+    # byte-equality vs the previous spec: the chain probe and all v1 planted values unchanged
+    spec_path = HERE / "fixture_spec.json"
+    if spec_path.exists():
+        old = json.loads(spec_path.read_text(encoding="utf-8"))
+        assert old["ground_truth_answer"] == GROUND_TRUTH, "2353-equivalence FAIL"
+        assert old["table"] == {str(k): v for k, v in REGION_SURCHARGE.items()}, "table drift"
+        assert old["reconciliation_adder_cents"] == RECONCILIATION_ADDER, "adder drift"
+        assert old["control_table"] == {str(k): v for k, v in CTRL_TABLE.items()}, "ctrl drift"
+        assert old["relevance_control"]["relevant_table"] == dict(DISPATCH), "pair drift (rel)"
+        assert old["relevance_control"]["arbitrary_table"] == dict(ALIAS_TABLE), "pair drift (arb)"
+        print("byte-equality guards vs previous spec: PASS")
+
     (HERE / "host_doc.jsonl").write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in recs) + "\n", encoding="utf-8")
-
     total = sum(n_tokens(b) for b in blocks)
     spec = {
         "_doc": "P7 split-unit fixture. Ground truth computed here; the host doc embeds the same "
                 "table/constant. Answer = REGION_SURCHARGE_CENTS[QUERIED_CODE] + RECONCILIATION_ADDER_CENTS.",
+        "fixture_version": FIXTURE_VERSION,
         "seed": SEED,
+        "seed_v2_stream": SEED + 1,
         "queried_code": QUERIED_CODE,
         "table": {str(k): v for k, v in REGION_SURCHARGE.items()},
         "reconciliation_adder_cents": RECONCILIATION_ADDER,
@@ -288,21 +403,42 @@ def main():
             "relevant_table": dict(DISPATCH),
             "arbitrary_decl": "DISPLAY_LABELS = {",
             "arbitrary_table": dict(ALIAS_TABLE),
+            "v2_paths": {"relevant": "routing/router.py", "arbitrary": "routing/labels.py",
+                         "note": "v2: same well-represented category (routing/), sibling modules — "
+                                 "category representation matched by construction (was: singleton "
+                                 "dispatch/ and ui/ in v1)"},
+        },
+        "positive_control": {
+            "_doc": "Relevance-control v2 fix 1: instrument-sensitivity control. Small, "
+                    "behavior-governing, brief-central, in the well-represented queue/ category. "
+                    "Sensitivity = >= Tier 1 in >= 4/5 seeds under neutral+v2 (see "
+                    "RELEVANCE-CONTROL-V2.md). Attribution requires STAGE_ORDER / "
+                    "queue/pipeline.py / run_pipeline — generic 'queue' category mentions do not count.",
+            "decl": "STAGE_ORDER = [",
+            "module": "queue/pipeline.py",
+            "stages": list(STAGE_KEYS),
+            "consumer": "run_pipeline",
         },
         "positions": {"n_blocks": len(blocks), "fragment1_block": final_pos["f1"],
+                      "pc_block": final_pos["pc"],
                       "control_block": final_pos["ctrl"], "relevant_block": final_pos["rel"],
                       "alias_block": final_pos["alias"], "fragment2_block": final_pos["f2"],
+                      "phase_a_chunks": {t: _phase_a_chunk_of(chunksA, final_pos[t])
+                                         for t in final_pos},
                       "total_tokens": total},
         "fragment1_text": fragment1_text(),
         "control_text": control_text(),
         "relevant_text": relevant_text(),
         "aliases_text": aliases_text(),
         "fragment2_text": fragment2_text(),
+        "pc_text": pc_text(),
     }
     (HERE / "fixture_spec.json").write_text(json.dumps(spec, indent=1, ensure_ascii=False), encoding="utf-8")
-    print(f"blocks={len(blocks)} total_tokens={total} "
-          f"frag1@block{final_pos['f1']} ctrl@block{final_pos['ctrl']} "
+    print(f"fixture v{FIXTURE_VERSION}: blocks={len(blocks)} total_tokens={total} "
+          f"frag1@block{final_pos['f1']} pc@block{final_pos['pc']} ctrl@block{final_pos['ctrl']} "
           f"rel@block{final_pos['rel']} alias@block{final_pos['alias']} frag2@block{final_pos['f2']}")
+    print(f"phase-A chunks: {spec['positions']['phase_a_chunks']} "
+          f"(pair same-chunk + pc-distinct guards PASS)")
     print(f"QUERIED_CODE={QUERIED_CODE} table[{QUERIED_CODE}]={REGION_SURCHARGE[QUERIED_CODE]} "
           f"adder={RECONCILIATION_ADDER} GROUND_TRUTH={GROUND_TRUTH}")
 
