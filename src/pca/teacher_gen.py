@@ -79,9 +79,10 @@ GRAMMAR = """You maintain a bounded integration state via edit operations, one p
     REMOVE <id> "<quote>"                    delete entry <id>
     NO_CHANGE                                this pass contributes nothing
 
-The <quote> is REQUIRED on REPLACE and REMOVE: a short verbatim fragment (4+ chars) of the
-CURRENT text of the entry you are changing. It proves you are editing the entry you think
-you are; an edit whose quote does not match its target is refused by the harness."""
+The <quote> is REQUIRED on REPLACE and REMOVE: ONE short fragment (roughly 5-15 words),
+copied EXACTLY from the CURRENT text of the entry you are changing. It proves you are
+editing the entry you think you are; an edit whose quote does not match its target is
+refused by the harness. Do not paraphrase inside the quote."""
 
 RUBRICS = {
     "scaffold": ("This is an early, heavily compressed pass. Expected ops: ADD new scaffold "
@@ -235,6 +236,11 @@ def main() -> None:
         out["record"]["config_hash"] = cfg_hash
         done += 1
         if args.audit:
+            # persist audit trajectories separately — the prereg's hand-audit needs them
+            audit_dir = traj_dir.parent / (traj_dir.name + "_audit")
+            audit_dir.mkdir(parents=True, exist_ok=True)
+            (audit_dir / f"{doc['doc_id']}.json").write_text(
+                json.dumps(out["record"], indent=1, ensure_ascii=False), encoding="utf-8")
             ps = out["record"]["passes"]
             v = sum(p["valid"] for p in ps) / max(sum(p["candidates"] for p in ps), 1)
             q = sum(p["quoted_destructive"] for p in ps) / max(sum(p["destructive"] for p in ps), 1)

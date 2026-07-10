@@ -62,8 +62,14 @@ from dataclasses import dataclass, field
 
 _OP_START = re.compile(r"^\s*(?:[-*]\s*|\d+[.)]\s*)?(ADD|REPLACE|REMOVE|NO_CHANGE)\b(.*)$", re.I)
 _ADD_RE = re.compile(r"^\s+(END|S\d+)\s*:\s*(.+)$", re.I | re.S)
-_REPLACE_RE = re.compile(r"^\s+(S\d+)\s*(?:\"([^\"]{4,160})\")?\s*:\s*(.+)$", re.I | re.S)
-_REMOVE_RE = re.compile(r"^\s+(S\d+)\s*(?:\"([^\"]{4,160})\")?\s*\.?\s*$", re.I)
+# v3.1 (2026-07-10, teacher-audit finding — the D22 lesson applied to quotes): models emit
+# MULTIPLE quoted fragments ("label" "content") and fragments longer than 160 chars. Both
+# are good content-addressing; the grammar accepts 1+ fragments of 4–400 chars each. Every
+# fragment must match the target (redirect requires a unique entry matching ALL fragments).
+_QUOTE_REGION = r"((?:\"[^\"]{4,400}\"\s*)+)"
+_QUOTE_FRAG = re.compile(r"\"([^\"]{4,400})\"")
+_REPLACE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?:\s*(.+)$", re.I | re.S)
+_REMOVE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?\.?\s*$", re.I)
 
 # v3 guard thresholds — initial values, validated by the P-A false-block replay
 # (E2PRIME-CRITERION §1) and frozen before E2′ data generation.
@@ -163,7 +169,9 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
             if m2 and (r := resolve(m2.group(1).upper())) is not None:
                 op = {"op": "REPLACE", "id": r, "text": m2.group(3).strip()}
                 if m2.group(2):
-                    op["quote"] = m2.group(2).strip()
+                    frags = [f.strip() for f in _QUOTE_FRAG.findall(m2.group(2))]
+                    op["quotes"] = frags
+                    op["quote"] = " ".join(frags)   # display/back-compat
                 if m2.group(1).upper() in alias:
                     res.aliased += 1
         elif kw == "REMOVE":
@@ -171,7 +179,9 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
             if m2 and (r := resolve(m2.group(1).upper())) is not None:
                 op = {"op": "REMOVE", "id": r}
                 if m2.group(2):
-                    op["quote"] = m2.group(2).strip()
+                    frags = [f.strip() for f in _QUOTE_FRAG.findall(m2.group(2))]
+                    op["quotes"] = frags
+                    op["quote"] = " ".join(frags)
                 if m2.group(1).upper() in alias:
                     res.aliased += 1
         if op:
@@ -221,12 +231,14 @@ class IntegrationState:
         target = next((e for e in self.entries if e["id"] == op["id"]), None)
         if target is None:
             return None, "missing_id"
-        quote = op.get("quote")
-        if quote:
-            qn = _norm(quote)
-            if qn and qn in _norm(target["text"]):
+        frags = op.get("quotes") or ([op["quote"]] if op.get("quote") else [])
+        if frags:
+            fn = [_norm(f) for f in frags if _norm(f)]
+            tn = _norm(target["text"])
+            if fn and all(f in tn for f in fn):
                 return target, None
-            matches = [e for e in self.entries if qn in _norm(e["text"])]
+            matches = [e for e in self.entries
+                       if all(f in _norm(e["text"]) for f in fn)]
             if len(matches) == 1:
                 return matches[0], "redirected_quote"
             return None, "blocked_quote_mismatch"

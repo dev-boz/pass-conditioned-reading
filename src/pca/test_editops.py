@@ -162,4 +162,45 @@ st16.apply(parse_ops(f"REPLACE S1 \"MODULES\": {dup}\nREPLACE S3: {dup}",
 assert st16.entries[0]["text"] == dup and st16.entries[2]["text"] == dup, st16.entries
 assert not st16.last_report["blocked"], st16.last_report
 
-print("editops OK (parser v2.1 + v3 content-addressing)")
+# ---- v3.1: multi-fragment + long quotes (the teacher-audit convention) -------------
+# two quoted fragments, both matching the target → applied
+st17 = IntegrationState()
+st17.apply(parse_ops(
+    "ADD END: Compensation disparity: military get family separation allowance, combat zone "
+    "tax exclusion, 1yr disability salary continuation; civilians get 45 days\n"
+    "ADD END: Health protection gaps: 52 missing assessments, 285 missing immunizations",
+    st17.ids(), st17.next_id).ops)
+r17 = parse_ops('REPLACE S1 "Compensation disparity" "civilians get 45 days": '
+                "Compensation structures: hardship pay compared; disparity documented",
+                st17.ids(), st17.next_id)
+assert r17.valid == 1 and r17.ops[0]["quotes"] == ["Compensation disparity", "civilians get 45 days"], r17.ops
+st17.apply(r17.ops)
+assert st17.entries[0]["text"].startswith("Compensation structures"), st17.entries
+assert not st17.last_report["blocked"], st17.last_report
+
+# one fragment matching a DIFFERENT entry only → redirect by content (all fragments must match)
+r18 = parse_ops('REPLACE S1 "Health protection gaps" "285 missing immunizations": '
+                "Health gaps updated: 285 immunizations traced", st17.ids(), st17.next_id)
+st17.apply(r18.ops)
+assert "285 immunizations traced" in st17.entries[1]["text"], st17.entries
+assert st17.last_report["redirected"], st17.last_report
+
+# fragments matching different entries EACH but no single entry matching ALL → blocked
+before17 = st17.render()
+st17.apply(parse_ops('REPLACE S1 "Compensation structures" "285 immunizations traced": mash',
+                     st17.ids(), st17.next_id).ops)
+assert st17.render() == before17 and st17.last_report["blocked"], st17.last_report
+
+# a single long quote (>160 chars, <=400) parses and verifies
+long_text = ("Systemic data tracking failure: no centralized system for civilian identity, "
+             "movements, or health records; December 2006 policy mandated weekly electronic "
+             "reporting and centralized health archives across all combatant commands")
+st19 = IntegrationState()
+st19.apply(parse_ops(f"ADD END: {long_text}", st19.ids(), st19.next_id).ops)
+r19 = parse_ops(f'REPLACE S1 "{long_text[:220]}": {long_text} (audited 2007)',
+                st19.ids(), st19.next_id)
+assert r19.valid == 1, (r19.valid, r19.invalid)
+st19.apply(r19.ops)
+assert "(audited 2007)" in st19.entries[0]["text"]
+
+print("editops OK (parser v2.1 + v3 content-addressing + v3.1 multi-fragment)")

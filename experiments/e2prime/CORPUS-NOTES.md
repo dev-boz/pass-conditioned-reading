@@ -30,3 +30,13 @@ Final scan: **CLEAN — 0 hits across 277 docs** (`leakage_scan.json`, regenerab
 `python -m pca.teacher_gen --config experiments/e2prime/teacher_config.yaml --audit 20` —
 stratified across govreport / synthcode / realcode; gate bars: mean v3 validity ≥ 0.95,
 quote rate on destructive ops ≥ 0.9; hand-audit of trajectories before mass generation.
+
+**Attempt #1 (2026-07-10): FAILED on validity** — mean 0.773 (bar ≥0.95); quote-rate passed
+(0.986). Diagnosis (2-pass replay on the worst doc): the teacher emits REPLACE quotes as
+**multiple quoted fragments** ("label" "content") and fragments **longer than the 160-char
+cap** — good content-addressing rejected by the v3 grammar (the D22 parser lesson, replayed
+on quotes). Fix, harness-side per the pre-reg's permitted-iteration rule: parser **v3.1**
+accepts 1+ fragments of 4–400 chars (ALL must match the target; redirect requires a unique
+entry matching all); grammar prompt now asks for one 5–15-word exact fragment (tolerated if
+not followed). Unit suite + archived-clobber replay + P1 false-block sweep all still clean.
+Audit mode now persists trajectories to `trajectories_audit/` (hand-audit needs them).
