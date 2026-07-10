@@ -16,3 +16,9 @@ experiments/p4_planted_facts/dense_run.json
 experiments/p5_verbatim_contamination/p5_pass*.json
 # P6 global-synthesis run outputs — regenerated
 experiments/p6_global_synthesis/p6_results*.json
+# P7 raw run dumps + logs — regenerated, not vendored
+experiments/p7_split_unit/p7_results_*.json
+experiments/p7_split_unit/*_result.json
+experiments/p7_split_unit/*.log
+experiments/e2prime/leakage_scan.json
+data/e2prime/
