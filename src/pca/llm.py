@@ -80,6 +80,52 @@ class LlamaServer:
             self.proc.terminate()
 
 
+class ClaudePClient:
+    """TEACHER backend for E2′ data generation: Claude Haiku 4.5 via a deterministic
+    `claude -p --model haiku` one-shot per pass (the D29/D30 lineage — same OAuth path as the
+    production compressor, no API key, no agent improvisation). The system prompt is embedded
+    into the stdin prompt (one-shot has no separate system role we control deterministically).
+    Named limitation, recorded per trajectory: `claude -p` exposes no temperature/seed control,
+    so teacher decoding parameters are the CLI defaults — acceptable for a teacher (the student
+    distills the behaviour, not the sampler), impossible for a clean comparison arm. Same
+    interface as the other clients so runners use it unchanged."""
+
+    def __init__(self, model: str = "haiku", exe: str | None = None,
+                 timeout: int = 300, **_ignored):
+        import os
+        from shutil import which
+
+        self.model = model
+        self.exe = exe or os.environ.get("PCA_CLAUDE_EXE") or which("claude") or "claude"
+        self.timeout = timeout
+
+    def healthy(self) -> bool:
+        return True
+
+    def ensure_running(self, wait_s: int = 0) -> None:
+        return  # external CLI; nothing to launch
+
+    def chat(self, system: str, user: str, max_tokens: int = 700,
+             temperature: float = 0.0, seed: int = 42) -> dict:
+        prompt = (system or "") + "\n\n========\n\n" + (user or "")
+        prov = f"claude-p:{self.model}|temp/seed=cli-defaults"
+        t0 = time.time()
+        try:
+            p = subprocess.run([self.exe, "-p", "--model", self.model],
+                               input=prompt, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=self.timeout)
+        except subprocess.TimeoutExpired:
+            return {"text": "", "usage": {}, "provider": prov,
+                    "wall_s": round(time.time() - t0, 1)}
+        if p.returncode != 0:
+            raise RuntimeError(f"claude -p exit {p.returncode}: {(p.stderr or '')[:200]}")
+        return {"text": (p.stdout or "").strip(), "usage": {},
+                "provider": prov, "wall_s": round(time.time() - t0, 1)}
+
+    def stop(self) -> None:
+        return
+
+
 class RateLimitStop(RuntimeError):
     """Raised on 402 (credits/quota) or a persistent 429 (RPM/RPD cap). NOT an HTTPError, so
     run.py's truncation handler does not catch it -- it propagates and stops the run cleanly,
