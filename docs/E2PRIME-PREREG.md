@@ -57,7 +57,7 @@ Three slices, ~300 documents total, each 40–80K tokens:
 
 ## 5. Harness (frozen for all stages)
 
-- **Edit ops:** parser/state **v3** — content-addressed REPLACE/REMOVE (optional verbatim quote of the target entry's current text between id and colon), quote-verified apply with redirect-by-content; quote-less REPLACE under **guard=block** (suspicious-mismatch writes refused, logged). Grammar and guard semantics per the D31 entry in DECISIONS.md; regression obligations per E2PRIME-CRITERION §1 P-A.
+- **Edit ops:** parser/state **v3** — content-addressed REPLACE/REMOVE (optional verbatim quote of the target entry's current text between id and colon), quote-verified apply with redirect-by-content; quote-less REPLACE under **guard=strict** (misaddressed writes and unquoted slot-repurposing rewrites refused, logged; empirically 0 false blocks on 157 archived known-good ops). Grammar and guard semantics per D31 (+ same-day amendment); P-A obligations per E2PRIME-CRITERION §1 are satisfied as of D31/D32.
 - **Compressor:** frozen per document class — Haiku 4.5 (D29) for prose; the frozen probe-blind v2 code compressor for code-class docs. Compressor code never edited mid-program; outputs re-derived deterministically per fixture/corpus version.
 - **Schedule:** `src/pca/schedule.py` unchanged; state budget per the parent window invariant; pass-1 scaffold budget B_s per outline Variant 2.
 - **Provenance:** every run archives config hash, prompts, seeds, per-pass state snapshots, and (new) per-op apply outcomes including guard blocks/redirects.

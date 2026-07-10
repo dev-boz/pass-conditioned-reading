@@ -135,4 +135,31 @@ st13.apply(parse_ops("REPLACE S1: overview of scheduling behaviour across passes
 assert "overview" in st13.entries[0]["text"], st13.entries
 assert not st13.last_report["blocked"], st13.last_report
 
+# STRICT mode blocks the same novel-content rewrite (the archived seed-2 slot-repurposing
+# shape: surcharge entry overwritten by an unrelated module description; descriptor words
+# like module/group/helpers are stopworded so they cannot inflate overlap)
+st14 = _clobber_state("strict")
+st14.apply(parse_ops(
+    "REPLACE S2: Audit module (group 90) provides helpers: bucket_shard, rank_invoice, "
+    "rank_node, format_invoice, filter_packet", st14.ids(), st14.next_id).ops)
+assert "REGION_SURCHARGE_CENTS" in st14.entries[1]["text"], st14.entries   # table survives
+assert st14.last_report["blocked"][0]["reason"] == "blocked_strict_repurpose", st14.last_report
+
+# strict still allows the same rewrite when quote-authorized (content-address names the victim)
+st15 = _clobber_state("strict")
+st15.apply(parse_ops(
+    'REPLACE S2 "REGION_SURCHARGE_CENTS": Audit module (group 90) provides helpers: '
+    "bucket_shard, rank_invoice", st15.ids(), st15.next_id).ops)
+assert "Audit module" in st15.entries[1]["text"], st15.entries
+assert not st15.last_report["blocked"], st15.last_report
+
+# duplicate-pair exemption (the P1 replay's false positive): two entries legitimately
+# updated with IDENTICAL text in one batch must not flag each other
+st16 = _clobber_state("block")
+dup = "Recommendations: improvements suggested include better validation and clearer routing"
+st16.apply(parse_ops(f"REPLACE S1 \"MODULES\": {dup}\nREPLACE S3: {dup}",
+                     st16.ids(), st16.next_id).ops)
+assert st16.entries[0]["text"] == dup and st16.entries[2]["text"] == dup, st16.entries
+assert not st16.last_report["blocked"], st16.last_report
+
 print("editops OK (parser v2.1 + v3 content-addressing)")

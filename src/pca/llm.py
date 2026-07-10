@@ -181,13 +181,16 @@ class KiroClient:
     the model's raw response. Same interface as the other clients so run.py/gates use it unchanged."""
 
     _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[=>]")
-    EXE = r"C:\Users\Boz\AppData\Local\Kiro-Cli\kiro-cli.exe"
 
     def __init__(self, kiro_model: str, exe: str | None = None, ctx: int = 200000,
                  max_tokens: int = 900, agent: str | None = None,
                  effort: str | None = None, **_ignored):
+        import os
+        from shutil import which
+
         self.kiro_model = kiro_model
-        self.exe = exe or self.EXE
+        # PATH/env-resolved, never a hardcoded per-user path (machine-portable, scrub-safe)
+        self.exe = exe or os.environ.get("PCA_KIRO_EXE") or which("kiro-cli") or "kiro-cli"
         self.ctx, self.max_tokens = ctx, max_tokens
         self.agent, self.effort = agent, effort
 

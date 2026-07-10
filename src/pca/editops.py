@@ -71,13 +71,25 @@ GUARD_JACCARD_TARGET_MAX = 0.10   # below this vs the target, a quote-less REPLA
 GUARD_JACCARD_OTHER_MIN = 0.50    # …if some other single entry matches this strongly,
 GUARD_LEAD_JACCARD_MIN = 0.15     # …or shares the new text's lead token at this overlap.
 
+# Document-class-general STRUCTURE descriptors, excluded from overlap scoring: they describe
+# that something is being catalogued, not what. The archived seed-2 slot-repurposing overwrite
+# scored Jaccard 0.19 against its victim purely on module/group/helpers-type tokens (P-A replay,
+# 2026-07-10); content overlap after exclusion is 0. Class-general by design — no fixture-,
+# probe-, or domain-specific words may enter this list (probe-blind discipline).
+_DESCRIPTOR_STOPWORDS = frozenset({
+    "module", "modules", "group", "groups", "helper", "helpers", "function", "functions",
+    "provides", "provide", "defines", "define", "includes", "include", "contains", "contain",
+    "section", "sections", "entry", "entries", "item", "items", "note", "notes",
+    "various", "several", "misc", "list", "lists",
+})
+
 
 def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s.strip().lower())
 
 
 def _words(s: str) -> set[str]:
-    return set(re.findall(r"[a-z0-9_]{3,}", s.lower()))
+    return set(re.findall(r"[a-z0-9_]{3,}", s.lower())) - _DESCRIPTOR_STOPWORDS
 
 
 def _jaccard(a: str, b: str) -> float:
@@ -180,7 +192,7 @@ class IntegrationState:
     """
 
     def __init__(self, guard: str = "off") -> None:
-        assert guard in ("off", "block", "redirect"), guard
+        assert guard in ("off", "block", "redirect", "strict"), guard
         self.entries: list[dict] = []
         self._next = 1
         self.guard = guard
@@ -198,10 +210,14 @@ class IntegrationState:
         self._next += 1
         return i
 
-    def _content_target(self, op: dict) -> tuple[dict | None, str | None]:
+    def _content_target(self, op: dict, batch_written: set[str]) -> tuple[dict | None, str | None]:
         """v3 target resolution for a destructive op. Returns (entry, note):
         note None = plain apply; "redirected_*" = apply to `entry` with logging;
-        entry None = do not apply (note is the block reason, or "missing_id")."""
+        entry None = do not apply (note is the block reason, or "missing_id").
+        `batch_written` holds normalized texts already written in THIS apply() batch —
+        entries just given identical text are exempt from candidacy (the P1 replay's
+        duplicate-pair false positive: two entries legitimately updated with the same
+        text in one pass must not flag each other)."""
         target = next((e for e in self.entries if e["id"] == op["id"]), None)
         if target is None:
             return None, "missing_id"
@@ -215,8 +231,11 @@ class IntegrationState:
                 return matches[0], "redirected_quote"
             return None, "blocked_quote_mismatch"
         if op["op"] == "REPLACE" and self.guard != "off":
+            if _norm(op["text"]) in batch_written:
+                return target, None  # same text already written this batch → duplicate update
             if _jaccard(op["text"], target["text"]) < GUARD_JACCARD_TARGET_MAX:
-                others = [e for e in self.entries if e is not target]
+                others = [e for e in self.entries
+                          if e is not target and _norm(e["text"]) not in batch_written]
                 strong = [e for e in others
                           if _jaccard(op["text"], e["text"]) >= GUARD_JACCARD_OTHER_MIN]
                 lead = _lead(op["text"])
@@ -230,11 +249,18 @@ class IntegrationState:
                     return None, "blocked_guard"
                 if cand:
                     return None, "blocked_guard_ambiguous"
+                if self.guard == "strict":
+                    # slot-repurposing shape (the archived seed-2 instance): novel content,
+                    # near-zero overlap with the entry it overwrites, no matching entry
+                    # anywhere. Under strict, a quote is REQUIRED to authorize such a
+                    # rewrite; without one the write is refused.
+                    return None, "blocked_strict_repurpose"
         return target, None
 
     def apply(self, ops: list[dict]) -> int:
         applied = 0
         report: dict = {"applied": 0, "blocked": [], "redirected": []}
+        batch_written: set[str] = set()   # normalized texts written by THIS batch's REPLACEs
         for op in ops:
             if op["op"] == "NO_CHANGE":
                 continue
@@ -249,7 +275,7 @@ class IntegrationState:
                     self.entries.insert(pos + 1, entry)
                 applied += 1
             elif op["op"] in ("REPLACE", "REMOVE"):
-                target, note = self._content_target(op)
+                target, note = self._content_target(op, batch_written)
                 if target is None:
                     if note != "missing_id":
                         report["blocked"].append({"op": dict(op), "reason": note})
@@ -259,6 +285,7 @@ class IntegrationState:
                         {"from": op["id"], "to": target["id"], "via": note, "op": dict(op)})
                 if op["op"] == "REPLACE":
                     target["text"] = op["text"]
+                    batch_written.add(_norm(op["text"]))
                 else:
                     self.entries = [e for e in self.entries if e is not target]
                 applied += 1
