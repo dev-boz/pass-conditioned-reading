@@ -215,6 +215,13 @@ def main() -> None:
 
     client = make_teacher_client(cfg)
     docs = [json.loads(l) for l in corpus_path.open(encoding="utf-8") if l.strip()]
+    if args.audit:
+        # stratify the audit across document classes (doc_id prefix: govreport /
+        # synthcode / realcode) — corpus order alone would audit only the first slice
+        groups: dict[str, list[dict]] = {}
+        for d in docs:
+            groups.setdefault(d["doc_id"].split("-")[0], []).append(d)
+        docs = [d for tup in zip(*groups.values()) for d in tup]
     n_cap = args.audit or args.limit or len(docs)
 
     audit_rows, done = [], 0

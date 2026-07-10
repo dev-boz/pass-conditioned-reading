@@ -51,9 +51,15 @@ def main() -> None:
     for t in planted:
         planted_grams |= ngrams(t)
 
+    # Precision fix (2026-07-10, first full-corpus run): bare integers ("1365") matched
+    # incidental numbers in real code — over-broad vs the prereg's "as table-adjacent
+    # tokens" wording. Any actual copy vector is covered by identifiers, pair strings,
+    # and 12-grams; integers are probed only in their table/arithmetic-adjacent shapes.
     value_probes = [f"{spec['queried_code']}: {spec['table_value_for_queried']}",
-                    str(spec["reconciliation_adder_cents"]),
-                    str(spec["ground_truth_answer"])]
+                    f"= {spec['reconciliation_adder_cents']}",
+                    f"+ {spec['reconciliation_adder_cents']}",
+                    f"= {spec['ground_truth_answer']}",
+                    f": {spec['ground_truth_answer']}"]
     pair_probes = [f'"{k}": "{v}"' for tbl in ("relevant_table", "arbitrary_table")
                    for k, v in spec["relevance_control"][tbl].items()]
     table_probes = [f"{k}: {v}" for k, v in spec["table"].items()]
