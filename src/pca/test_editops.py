@@ -209,4 +209,43 @@ assert r19.valid == 1, (r19.valid, r19.invalid)
 st19.apply(r19.ops)
 assert "(audited 2007)" in st19.entries[0]["text"]
 
-print("editops OK (parser v2.1 + v3 content-addressing + v3.1 multi-fragment)")
+# ---- v3.2: sed-style pairs, sub-letter ids, colon-less/quoted ADD, NO_CHANGE tail ----
+# sed-style REPLACE pair (no colon): last fragment = new text, earlier = address
+st20 = IntegrationState()
+st20.apply(parse_ops("ADD END: uneven depreciation allowances across assets\n"
+                     "ADD END: compliance costs entry ($40-85B annual)", st20.ids(), st20.next_id).ops)
+r20 = parse_ops('REPLACE S1 "uneven depreciation allowances" "uneven depreciation allowances '
+                'across assets; debt financing preferred over equity"', st20.ids(), st20.next_id)
+assert r20.valid == 1 and r20.ops[0]["quotes"] == ["uneven depreciation allowances"], r20.ops
+st20.apply(r20.ops)
+assert st20.entries[0]["text"].endswith("preferred over equity"), st20.entries
+assert not st20.last_report["blocked"], st20.last_report
+
+# sed-style pair addressed to the WRONG id → content wins, redirected
+r21 = parse_ops('REPLACE S2 "uneven depreciation allowances" "rewritten depreciation entry"',
+                st20.ids(), st20.next_id)
+st20.apply(r21.ops)
+assert st20.entries[0]["text"] == "rewritten depreciation entry", st20.entries
+assert "compliance costs" in st20.entries[1]["text"], st20.entries
+assert st20.last_report["redirected"], st20.last_report
+
+# sub-lettered ids: v2.1 named-append + same-response alias resolution, letters included
+st22 = IntegrationState()
+r22 = parse_ops("ADD S8a: alpha entry\nADD S8b: beta entry\nREPLACE S8a: alpha entry updated",
+                st22.ids(), st22.next_id)
+assert r22.valid == 3, (r22.valid, r22.invalid)
+st22.apply(r22.ops)
+assert [(e["id"], e["text"]) for e in st22.entries] == [
+    ("S1", "alpha entry updated"), ("S2", "beta entry")], st22.entries
+
+# colon-less ADD with id; quoted-text ADD; NO_CHANGE with trailing commentary
+st23 = IntegrationState()
+r23 = parse_ops("ADD S36 NOTCH_WEIGHTS_0 (12 keys: 12-90 range, ops-review-set)\n"
+                'ADD S37 "Qwen2Audio lazy module: TYPE_CHECKING imports pattern"\n'
+                "NO_CHANGE - nothing new in this pass", st23.ids(), st23.next_id)
+assert r23.valid == 3, (r23.valid, r23.invalid)
+st23.apply(r23.ops)
+assert st23.entries[0]["text"].startswith("NOTCH_WEIGHTS_0"), st23.entries
+assert st23.entries[1]["text"].startswith("Qwen2Audio"), st23.entries
+
+print("editops OK (parser v2.1 + v3 content-addressing + v3.1 multi-fragment + v3.2 conventions)")

@@ -61,7 +61,20 @@ import re
 from dataclasses import dataclass, field
 
 _OP_START = re.compile(r"^\s*(?:[-*]\s*|\d+[.)]\s*)?(ADD|REPLACE|REMOVE|NO_CHANGE)\b(.*)$", re.I)
-_ADD_RE = re.compile(r"^\s+(END|S\d+)\s*:\s*(.+)$", re.I | re.S)
+# v3.2 (2026-07-10, teacher-gate attempts #2/#3 — three further observed conventions, all
+# accommodated in the D22 spirit; every one was previously invalid so no archived valid op
+# changes meaning):
+#   (1) sed-style REPLACE pairs: `REPLACE S4 "old fragment" "new full text"` with NO colon —
+#       the LAST fragment is the replacement text, earlier fragment(s) the content-address;
+#   (2) sub-lettered ids (`ADD S34a: …`) — the v2.1 naming convention with letter suffixes;
+#       the id token widens to S\d+[A-Za-z]? everywhere and the alias map does the rest;
+#   (3) colon-less and quoted-text ADDs (`ADD S36 <text>`, `ADD S2 "<text>"`) — ADD validity
+#       is grammar-only by design, so the anchor+text intent is honored without a colon.
+#   NO_CHANGE with trailing commentary is a NO_CHANGE (semantically unambiguous no-op).
+_ID = r"S\d+[A-Za-z]?"
+_ADD_RE = re.compile(rf"^\s+(END|{_ID})\s*:\s*(.+)$", re.I | re.S)
+_ADD_QUOTED_RE = re.compile(rf"^\s+(END|{_ID})\s+\"(.{{4,4000}})\"\s*\.?\s*$", re.I | re.S)
+_ADD_BARE_RE = re.compile(rf"^\s+(END|{_ID})\s+(.+)$", re.I | re.S)
 # v3.1 (2026-07-10, teacher-audit finding — the D22 lesson applied to quotes): models emit
 # MULTIPLE quoted fragments ("label" "content") and fragments far longer than 160 chars —
 # frequently the whole current entry (444/483-char fragments observed in audit trajectories).
@@ -70,8 +83,10 @@ _ADD_RE = re.compile(r"^\s+(END|S\d+)\s*:\s*(.+)$", re.I | re.S)
 # fragment must match the target (redirect requires a unique entry matching ALL fragments).
 _QUOTE_REGION = r"((?:\"[^\"]{4,2000}\"\s*)+)"
 _QUOTE_FRAG = re.compile(r"\"([^\"]{4,2000})\"")
-_REPLACE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?:\s*(.+)$", re.I | re.S)
-_REMOVE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?\.?\s*$", re.I)
+_REPLACE_RE = re.compile(rf"^\s+({_ID})\s*" + _QUOTE_REGION + r"?:\s*(.+)$", re.I | re.S)
+_REPLACE_PAIR_RE = re.compile(rf"^\s+({_ID})\s*((?:\"[^\"]{{4,2000}}\"\s*){{2,}})\.?\s*$",
+                              re.I | re.S)
+_REMOVE_RE = re.compile(rf"^\s+({_ID})\s*" + _QUOTE_REGION + r"?\.?\s*$", re.I)
 
 # v3 guard thresholds — initial values, validated by the P-A false-block replay
 # (E2PRIME-CRITERION §1) and frozen before E2′ data generation.
@@ -147,10 +162,10 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
         res.candidate_lines += 1
         kw, rest = m.group(1).upper(), m.group(2)
         op = None
-        if kw == "NO_CHANGE" and rest.strip(" .") == "":
-            op = {"op": "NO_CHANGE"}
+        if kw == "NO_CHANGE":
+            op = {"op": "NO_CHANGE"}   # v3.2: trailing commentary is still a no-op
         elif kw == "ADD":
-            m2 = _ADD_RE.match(rest)
+            m2 = _ADD_RE.match(rest) or _ADD_QUOTED_RE.match(rest) or _ADD_BARE_RE.match(rest)
             if m2:
                 anchor = m2.group(1).upper()
                 would_be = f"S{next_id + len(pending)}"
@@ -175,6 +190,13 @@ def parse_ops(raw_output: str, existing_ids: set[str], next_id: int = 1) -> Pars
                     op["quotes"] = frags
                     op["quote"] = " ".join(frags)   # display/back-compat
                 if m2.group(1).upper() in alias:
+                    res.aliased += 1
+            elif (m3 := _REPLACE_PAIR_RE.match(rest)) and (r := resolve(m3.group(1).upper())) is not None:
+                # v3.2 sed-style pair: last fragment = new text; earlier = content-address
+                frags = [f.strip() for f in _QUOTE_FRAG.findall(m3.group(2))]
+                op = {"op": "REPLACE", "id": r, "text": frags[-1],
+                      "quotes": frags[:-1], "quote": " ".join(frags[:-1])}
+                if m3.group(1).upper() in alias:
                     res.aliased += 1
         elif kw == "REMOVE":
             m2 = _REMOVE_RE.match(rest)

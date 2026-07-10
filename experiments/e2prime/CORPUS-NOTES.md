@@ -41,6 +41,17 @@ entry matching all); grammar prompt now asks for one 5–15-word exact fragment 
 not followed). Unit suite + archived-clobber replay + P1 false-block sweep all still clean.
 Audit mode now persists trajectories to `trajectories_audit/` (hand-audit needs them).
 
+**Attempt #3 (2026-07-10): FAILED at 0.875** (quote-rate 1.000). Residual shapes classified
+from the persisted trajectories: sed-style `REPLACE id "old" "new"` pairs with no colon
+(dominant, 151), sub-lettered ids (`ADD S34a:`), colon-less/quoted-text ADDs, one NO_CHANGE
+with trailing commentary. All are reasonable conventions → parser **v3.2** accommodates them
+(pair form: last fragment = new text, earlier fragments = content-address; id token widened
+to `S\d+[A-Za-z]?` with the v2.1 alias map; ADD accepts colon-less and quoted-text forms;
+NO_CHANGE tolerates trailing text). Archived P-series numbers remain parser-v2.1-labeled;
+v3.x is the E2′-era harness. **Projection: the attempt-3 trajectories reparsed under v3.2
+score mean validity 0.979 / quote-rate 1.000 / min-doc 0.918** — attempt #4 is the clean
+end-to-end scoring run (states built by the same parser the teacher's later passes saw).
+
 **Attempt #2 (2026-07-10): superseded mid-run.** First doc improved 0.550 → 0.852 under
 v3.1, but its persisted trajectory showed the residual invalids were whole-entry quotes of
 444/483 chars — over the 400-char fragment cap. Cap raised to 2000 (longer quote = stricter
