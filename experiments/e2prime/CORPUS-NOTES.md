@@ -41,6 +41,16 @@ entry matching all); grammar prompt now asks for one 5–15-word exact fragment 
 not followed). Unit suite + archived-clobber replay + P1 false-block sweep all still clean.
 Audit mode now persists trajectories to `trajectories_audit/` (hand-audit needs them).
 
+**Attempt #4 (2026-07-10): GATE PASSED — mean validity 0.983 (bar ≥0.95), quote-rate 0.998
+(bar ≥0.9), worst doc 0.933** (projection said 0.979). Hand-audit spot-check: all 53 blocked
+ops are quote-mismatches (~2.6% of destructive ops; harness refusing unverifiable writes,
+zero guard misfires); prose final states are coherent topical briefs; **synthcode final
+states record the planted tables with full key→value mappings under need-class framing
+alone** — the target behavior for distillation, no probe ever named; closings render
+structured briefs from state; gen_path = kiro on every pass (claude -p fallback never
+fired). One cosmetic wart noted: occasional meta entries about the schedule itself
+("8 passes total"). The 20 trajectories sit in `trajectories_audit/` for maintainer review.
+
 **Attempt #3 (2026-07-10): FAILED at 0.875** (quote-rate 1.000). Residual shapes classified
 from the persisted trajectories: sed-style `REPLACE id "old" "new"` pairs with no colon
 (dominant, 151), sub-lettered ids (`ADD S34a:`), colon-less/quoted-text ADDs, one NO_CHANGE

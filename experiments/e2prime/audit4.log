@@ -1,0 +1,22 @@
+AUDIT govreport-00000: validity=1.000 quote_rate=1.000 blocked=1
+AUDIT synthcode-20001: validity=1.000 quote_rate=1.000 blocked=3
+AUDIT realcode-transformers-00: validity=0.990 quote_rate=1.000 blocked=10
+AUDIT govreport-00001: validity=0.967 quote_rate=1.000 blocked=0
+AUDIT synthcode-20002: validity=0.964 quote_rate=1.000 blocked=0
+AUDIT realcode-transformers-01: validity=1.000 quote_rate=1.000 blocked=0
+AUDIT govreport-00007: validity=1.000 quote_rate=1.000 blocked=1
+AUDIT synthcode-20003: validity=1.000 quote_rate=0.953 blocked=0
+AUDIT realcode-transformers-02: validity=0.970 quote_rate=1.000 blocked=1
+AUDIT govreport-00009: validity=1.000 quote_rate=1.000 blocked=1
+AUDIT synthcode-20004: validity=1.000 quote_rate=1.000 blocked=24
+AUDIT realcode-transformers-03: validity=0.993 quote_rate=1.000 blocked=4
+AUDIT govreport-00010: validity=1.000 quote_rate=1.000 blocked=1
+AUDIT synthcode-20005: validity=1.000 quote_rate=1.000 blocked=0
+AUDIT realcode-transformers-04: validity=0.957 quote_rate=1.000 blocked=0
+AUDIT govreport-00013: validity=0.973 quote_rate=1.000 blocked=1
+AUDIT synthcode-20006: validity=0.935 quote_rate=1.000 blocked=2
+AUDIT realcode-transformers-05: validity=0.986 quote_rate=1.000 blocked=1
+AUDIT govreport-00016: validity=0.933 quote_rate=1.000 blocked=0
+AUDIT synthcode-20007: validity=0.983 quote_rate=1.000 blocked=3
+
+TEACHER-QUALITY GATE over n=20 docs: mean validity=0.983 (need >=0.95) mean quote_rate=0.998 (need >=0.9); hand-audit the trajectories before mass generation (prereg §3).
