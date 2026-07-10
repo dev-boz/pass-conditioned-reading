@@ -45,7 +45,7 @@ Three slices, ~300 documents total, each 40–80K tokens:
 
 | Slice | ~n | Purpose | Named risk |
 |---|---|---|---|
-| (a) GovReport-family long prose | 120 | The E0/P4 document class; views regenerable by the frozen pipeline | — |
+| (a) GovReport-family long prose | 120 | The E0/P4 document class. **Amendment (2026-07-10, pre-data-gen):** uses the FROZEN E0 corpus and its frozen E0-final production views verbatim (views_haiku_final.jsonl — 2,400 views, 300 docs × K=8, D29/D30 gen_path provenance; zero new compressor calls). E0 docs are ~10–34K tokens, not this table's 40–80K — the 40–80K sizing applies to slices (b)/(c) only. Reusing the frozen artifact beats regenerating: same compressor, same provenance, already fidelity-checked | — |
 | (b) Synthetic codebases from the fixture *generator family*, fresh seeds ≠ 70707 | 90 | Code-class structure: constants, tables, call sites, cross-module bindings | **Distribution overfit to the generator's style** — mitigated by (c) and by the eval fixture's exclusion; declared, not hidden |
 | (c) Real-code pseudo-repos (permissively-licensed Python packages concatenated to length) | 90 | Distribution breadth for the code class | license/provenance recorded per doc |
 
