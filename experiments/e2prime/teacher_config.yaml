@@ -4,8 +4,19 @@
 # (forcing boundary, E2PRIME-CRITERION §2) — audited, prompts archived per trajectory.
 
 teacher:
-  backend: claude_p          # ClaudePClient — Haiku 4.5 via `claude -p` (D29/D30 lineage)
-  model: haiku
+  # Delivery-path order (maintainer directive 2026-07-10): SAME model (Claude Haiku 4.5)
+  # via kiro-cli FIRST (user's kiro quota; p7raw agent strips the kiro harness layer;
+  # effort=low keeps it non-thinking), falling back to `claude -p` (plan OAuth) on
+  # failure/empty output. D30 precedent: mixed delivery paths of one model are sound with
+  # per-record gen_path provenance + the KIRO_FIDELITY check; every rendered row and
+  # trajectory pass records which path produced it.
+  backends: [kiro, claude_p]
+  kiro:
+    model: claude-haiku-4.5
+    agent: p7raw
+    effort: low
+  claude_p:
+    model: haiku
   timeout_s: 300
 
 harness:

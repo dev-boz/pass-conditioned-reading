@@ -28,9 +28,48 @@ from pathlib import Path
 import yaml
 
 from .editops import IntegrationState, parse_ops
-from .llm import ClaudePClient
+from .llm import ClaudePClient, KiroClient
 from .planted import build_schedule
 from .textutils import n_tokens
+
+
+class FallbackClient:
+    """Ordered delivery paths of the SAME teacher model (D30 precedent): kiro-cli first
+    (maintainer directive 2026-07-10 — spare kiro quota), `claude -p` fallback. A path
+    'fails' on exception or empty text; provenance carries whichever path answered."""
+
+    def __init__(self, clients: list):
+        self.clients = clients
+
+    def chat(self, system: str, user: str, max_tokens: int = 700, **kw) -> dict:
+        last = {"text": "", "usage": {}, "provider": "none", "wall_s": 0.0}
+        for c in self.clients:
+            try:
+                r = c.chat(system, user, max_tokens=max_tokens, **kw)
+            except Exception as e:  # path down → try the next one
+                last = {"text": "", "usage": {}, "provider": f"{type(c).__name__}:error:{e}",
+                        "wall_s": 0.0}
+                continue
+            if (r.get("text") or "").strip():
+                return r
+            last = r
+        return last
+
+
+def make_teacher_client(cfg: dict):
+    order = cfg["teacher"].get("backends", ["claude_p"])
+    built = []
+    for name in order:
+        if name == "kiro":
+            k = cfg["teacher"]["kiro"]
+            built.append(KiroClient(kiro_model=k["model"], agent=k.get("agent"),
+                                    effort=k.get("effort")))
+        elif name == "claude_p":
+            built.append(ClaudePClient(model=cfg["teacher"]["claude_p"]["model"],
+                                       timeout=cfg["teacher"]["timeout_s"]))
+        else:
+            raise ValueError(f"unknown teacher backend: {name}")
+    return built[0] if len(built) == 1 else FallbackClient(built)
 
 GRAMMAR = """You maintain a bounded integration state via edit operations, one per line:
 
@@ -132,6 +171,7 @@ def run_doc(doc: dict, cfg: dict, client, repo_root: Path) -> dict:
         n_destr = sum(1 for o in res.ops if o["op"] in ("REPLACE", "REMOVE"))
         record["passes"].append({
             "k": i, "K": K, "phase": p["phase"], "stage": stage,
+            "gen_path": resp.get("provider"),
             "raw_output": resp["text"], "system": system, "user": user,
             "valid": res.valid, "candidates": res.candidate_lines, "applied": applied,
             "quoted_destructive": n_quoted, "destructive": n_destr,
@@ -139,14 +179,17 @@ def run_doc(doc: dict, cfg: dict, client, repo_root: Path) -> dict:
             "wall_s": resp.get("wall_s"),
         })
         rows.append({"doc_id": doc["doc_id"], "k": i, "K": K, "stage": stage,
+                     "gen_path": resp.get("provider"),
                      "prompt": [{"role": "system", "content": system},
                                 {"role": "user", "content": user}],
                      "completion": [{"role": "assistant", "content": resp["text"]}]})
     # closing row
     close_user = (f"FINAL STATE:\n{st.render()}\n\nTask: {cfg['task']['closing_demand']}")
     resp = client.chat(CLOSING_SYSTEM, close_user, max_tokens=1200)
-    record["closing"] = {"raw_output": resp["text"], "user": close_user}
+    record["closing"] = {"raw_output": resp["text"], "user": close_user,
+                         "gen_path": resp.get("provider")}
     rows.append({"doc_id": doc["doc_id"], "k": K + 1, "K": K, "stage": "closing",
+                 "gen_path": resp.get("provider"),
                  "prompt": [{"role": "system", "content": CLOSING_SYSTEM},
                             {"role": "user", "content": close_user}],
                  "completion": [{"role": "assistant", "content": resp["text"]}]})
@@ -170,7 +213,7 @@ def main() -> None:
     traj_dir.mkdir(parents=True, exist_ok=True)
     rendered_path = repo_root / cfg["paths"]["out_rendered"]
 
-    client = ClaudePClient(model=cfg["teacher"]["model"], timeout=cfg["teacher"]["timeout_s"])
+    client = make_teacher_client(cfg)
     docs = [json.loads(l) for l in corpus_path.open(encoding="utf-8") if l.strip()]
     n_cap = args.audit or args.limit or len(docs)
 
