@@ -67,3 +67,30 @@ Note the asymmetry, inherited from v1: a null-on-both with a failing PC is branc
 ## Cost, scope, publication
 
 Local llama.cpp on this box ($0 API; CUDA build cuts the 5-draw set to ~1–2 h). Does not run the battery, the chain gate, or any E2′ arm; does not touch the compressor code or the prompt; does not test retention. Nothing published; results surfaced for maintainer review with the raw transcripts and the per-seed tier table before any A/B/branch conclusion is recorded.
+
+---
+
+## RESULT (run 2026-07-10, fixture v2, 5 draws: temp-0 s42 + temp-0.7 s1–s4) — PRE-REGISTERED BRANCH 3: fork unresolvable at floor altitude (PC failed)
+
+Battery: coupled Phase-A warm, neutral prompt, frozen v2 compressor on the v2 scaffold, Qwen2.5-7B-Instruct Q4_K_M (llama.cpp CUDA, full offload), 31 passes + closing per draw. Mechanical pre-filter: `score_relevance_v2.py`; tier calls manual-confirmed from the flagged state contexts. **Interpretation below is DRAFT pending maintainer confirmation.**
+
+Recording tier per structure, per seed (0 ignored / 1 existence-or-purpose noted / 2 mappings):
+
+| seed | PC STAGE_ORDER | REL EVENT_DISPATCH | ARB DISPLAY_LABELS | final-state size |
+|---|---|---|---|---|
+| 42 (t0) | 0 | 0 | 0 | ~1,108 w |
+| 1 (t0.7) | 0 | 0 | 0 | ~380 w |
+| 2 (t0.7) | 0 | 0 | **1** | ~885 w |
+| 3 (t0.7) | 0 ⁽ᵃ⁾ | 0 ⁽ᵇ⁾ | 0 ⁽ᶜ⁾ | ~931 w |
+| 4 (t0.7) | 0 ⁽ᵈ⁾ | 0 | 0 | ~1,105 w |
+
+Borderlines (manual read, verbatim contexts archived in the result JSONs):
+(a) s3 held the full inventory line "MODULE: queue/pipeline.py defines helpers: run_pipeline, stage_intake, …, stage_publish" in state through passes ~16–20, **then lost it before close** — a record-then-lost instance (the churn signature, again). (b) s3 final: "MODULE: routing/router.py defines helpers: dispatch." — inventory mention, no role. (c) s3 final: labels.py inventory line with unrelated filler helpers merged in. (d) s4 final holds run_pipeline + all five stage_* names **inside a flat many-helper inventory list** — names only, no structure, no role, no order stated. Even scoring every borderline generously as Tier 1, PC = 2/5 < 4/5.
+
+**Verdict per the pre-registered outcome table: Outcome 3 — PC < 4/5 at ≥Tier 1 → the fork is unresolvable at floor altitude.** The floor summarizes above structure altitude even for the strongest legitimate candidate (small, pipeline-central, represented-category). Binding consequence (E2PRIME-CRITERION §4.1): **query-conditioned framing becomes mandatory for every E2′ recording gate; Fork 1 is evaluated on the trained student (§4.3).** This is a complete, reportable conclusion — not a failure of the control (the anti-laundering rule: this is NOT "Reading A confirmed").
+
+**Report-only observations (no interpretive weight; per-seed, single draws):**
+- The v2 fixes landed mechanically where v1's design could not: in v1 the singleton pair modules were *never mentioned at all* in any draw; in v2 the relocated pair reached at least inventory-level mention in 2/5 draws, and the PC's content reached state in 2/5 (once surviving to close as names-only). Category representation and small/central structure measurably raise what crosses the inventory threshold — just not to structure altitude.
+- The single Tier-1 of the battery went to the **arbitrary** table (s2: "Routing display labels are defined in routing/labels.py, with labels for various events such as 'order.created', 'payment.updated'" — role noted, no mappings). Inverted vs both readings' predictions; n=1 single draw; noise under this program's standards ("do not force a read").
+- s3's record-then-lost PC line is a fresh warm-retention observation consistent with the P7 churn story; it goes to §5(d) evidence, not to this control's question.
+- Final-state size spread ~380–1,108 words across seeds (v1 range reproduced).
