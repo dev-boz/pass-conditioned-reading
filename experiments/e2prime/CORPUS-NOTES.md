@@ -40,3 +40,9 @@ accepts 1+ fragments of 4–400 chars (ALL must match the target; redirect requi
 entry matching all); grammar prompt now asks for one 5–15-word exact fragment (tolerated if
 not followed). Unit suite + archived-clobber replay + P1 false-block sweep all still clean.
 Audit mode now persists trajectories to `trajectories_audit/` (hand-audit needs them).
+
+**Attempt #2 (2026-07-10): superseded mid-run.** First doc improved 0.550 → 0.852 under
+v3.1, but its persisted trajectory showed the residual invalids were whole-entry quotes of
+444/483 chars — over the 400-char fragment cap. Cap raised to 2000 (longer quote = stricter
+verification); attempt #2 stopped after doc 1 rather than spending the remaining ~430 kiro
+calls on a parser known to under-score. Attempt #3 is the scoring run.

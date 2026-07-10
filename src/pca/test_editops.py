@@ -191,13 +191,19 @@ st17.apply(parse_ops('REPLACE S1 "Compensation structures" "285 immunizations tr
                      st17.ids(), st17.next_id).ops)
 assert st17.render() == before17 and st17.last_report["blocked"], st17.last_report
 
-# a single long quote (>160 chars, <=400) parses and verifies
+# whole-entry quotes parse and verify (audit-observed: fragments of 444/483 chars —
+# the teacher quotes the entire current entry; cap is 2000)
 long_text = ("Systemic data tracking failure: no centralized system for civilian identity, "
              "movements, or health records; December 2006 policy mandated weekly electronic "
-             "reporting and centralized health archives across all combatant commands")
+             "reporting and centralized health archives across all combatant commands, "
+             "including location-specific deployment data, immunization histories, pre- and "
+             "post-deployment assessments, TB screening outcomes, evacuation routing through "
+             "Landstuhl, and quarterly reconciliation against component personnel rosters "
+             "maintained by each service branch under the revised reporting directive")
+assert len(long_text) > 400
 st19 = IntegrationState()
 st19.apply(parse_ops(f"ADD END: {long_text}", st19.ids(), st19.next_id).ops)
-r19 = parse_ops(f'REPLACE S1 "{long_text[:220]}": {long_text} (audited 2007)',
+r19 = parse_ops(f'REPLACE S1 "{long_text}": {long_text} (audited 2007)',
                 st19.ids(), st19.next_id)
 assert r19.valid == 1, (r19.valid, r19.invalid)
 st19.apply(r19.ops)

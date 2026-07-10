@@ -63,11 +63,13 @@ from dataclasses import dataclass, field
 _OP_START = re.compile(r"^\s*(?:[-*]\s*|\d+[.)]\s*)?(ADD|REPLACE|REMOVE|NO_CHANGE)\b(.*)$", re.I)
 _ADD_RE = re.compile(r"^\s+(END|S\d+)\s*:\s*(.+)$", re.I | re.S)
 # v3.1 (2026-07-10, teacher-audit finding — the D22 lesson applied to quotes): models emit
-# MULTIPLE quoted fragments ("label" "content") and fragments longer than 160 chars. Both
-# are good content-addressing; the grammar accepts 1+ fragments of 4–400 chars each. Every
+# MULTIPLE quoted fragments ("label" "content") and fragments far longer than 160 chars —
+# frequently the whole current entry (444/483-char fragments observed in audit trajectories).
+# Both are good content-addressing; the grammar accepts 1+ fragments of 4–2000 chars each
+# (longer quote = stricter verification; the negated-class regex stays linear). Every
 # fragment must match the target (redirect requires a unique entry matching ALL fragments).
-_QUOTE_REGION = r"((?:\"[^\"]{4,400}\"\s*)+)"
-_QUOTE_FRAG = re.compile(r"\"([^\"]{4,400})\"")
+_QUOTE_REGION = r"((?:\"[^\"]{4,2000}\"\s*)+)"
+_QUOTE_FRAG = re.compile(r"\"([^\"]{4,2000})\"")
 _REPLACE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?:\s*(.+)$", re.I | re.S)
 _REMOVE_RE = re.compile(r"^\s+(S\d+)\s*" + _QUOTE_REGION + r"?\.?\s*$", re.I)
 
