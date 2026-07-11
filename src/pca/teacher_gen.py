@@ -42,18 +42,20 @@ class FallbackClient:
         self.clients = clients
 
     def chat(self, system: str, user: str, max_tokens: int = 700, **kw) -> dict:
-        last = {"text": "", "usage": {}, "provider": "none", "wall_s": 0.0}
+        errs = []
         for c in self.clients:
             try:
                 r = c.chat(system, user, max_tokens=max_tokens, **kw)
             except Exception as e:  # path down → try the next one
-                last = {"text": "", "usage": {}, "provider": f"{type(c).__name__}:error:{e}",
-                        "wall_s": 0.0}
+                errs.append(f"{type(c).__name__}:{e}")
                 continue
             if (r.get("text") or "").strip():
                 return r
-            last = r
-        return last
+            errs.append(f"{type(c).__name__}:empty")
+        # 2026-07-11 hardening (mass-gen run #1: 772 empty passes rendered silently when
+        # kiro quota died and claude -p hit its window): ALL paths failing is a hard error.
+        # An empty teacher output must never become a training row; resumability retries.
+        raise RuntimeError("all teacher delivery paths failed: " + " | ".join(errs)[:300])
 
 
 def make_teacher_client(cfg: dict):
@@ -203,10 +205,15 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0, help="stop after N docs (0 = all)")
     ap.add_argument("--audit", type=int, default=0,
                     help="teacher-quality gate: run N docs, print the audit table, render nothing")
+    ap.add_argument("--backends", default=None,
+                    help="comma-separated delivery-path override (e.g. 'claude_p' when kiro "
+                         "is quota-capped); same model either way, gen_path records the truth")
     args = ap.parse_args()
 
     cfg_path = Path(args.config)
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    if args.backends:
+        cfg["teacher"]["backends"] = [b.strip() for b in args.backends.split(",")]
     cfg_hash = hashlib.sha256(cfg_path.read_bytes()).hexdigest()[:16]
     repo_root = Path(__file__).resolve().parents[2]
     corpus_path = repo_root / cfg["paths"]["corpus"]
@@ -232,7 +239,11 @@ def main() -> None:
         traj_file = traj_dir / f"{doc['doc_id']}.json"
         if traj_file.exists() and not args.audit:
             continue  # resumable
-        out = run_doc(doc, cfg, client, repo_root)
+        try:
+            out = run_doc(doc, cfg, client, repo_root)
+        except RuntimeError as e:
+            print(f"FAILED {doc['doc_id']}: {e}")
+            continue  # no artifacts written; the resumable re-run picks it up
         out["record"]["config_hash"] = cfg_hash
         done += 1
         if args.audit:
