@@ -73,3 +73,15 @@ D30 'remote' delivery path (same `claude -p --model haiku` one-shot on a second 
 over ssh; host env-resolved via `PCA_CLAUDE_SSH_HOST`, never committed). Standing order for
 the tail: `kiro → claude_p_remote → claude_p`; per-pass `gen_path` records the serving path
 as always. Kiro account rotations by the maintainer (~50 requests each) keep kiro first.
+
+## Mass generation COMPLETE (2026-07-12)
+
+**277/277 trajectories, zero empty passes** → `rebuild_rows.py` → **5,730 training rows**
+(`stageA_coupled.jsonl`). Corpus-wide teacher stats (full re-parse under production v3.2):
+mean per-doc validity **0.978**, min **0.818** (`govreport-00013`), 12/277 docs below 0.90 —
+consistent with the audit-20 gate (#4: 0.983). Delivery mix per-pass `gen_path`: **kiro 5,320
+/ claude-p 410 / claude-p-remote 0** (the remote backend was wired and probe-validated but the
+final kiro rotation carried the tail before it was needed). The 2026-07-11 empty-pass incident
+docs were fully regenerated; `FAILED` lines in `massgen.log` are the audit trail of capped
+windows, each later resolved by a resumable relaunch. The D33 contingency snapshot
+`stageA_coupled_train257.jsonl` is now moot (superseded by the full set; retained per D33).
