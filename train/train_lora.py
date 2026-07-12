@@ -43,6 +43,9 @@ def parse_args() -> argparse.Namespace:
                    help="held-out fraction, split by DOC ID (never by row) for the P-C health check")
     p.add_argument("--merge", action="store_true", help="save merged weights after training")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--save-steps", type=int, default=25,
+                   help="checkpoint every N optimizer steps (0 = per-epoch only). Pause/resume "
+                        "granularity — cadence does not alter the optimization trajectory")
     return p.parse_args()
 
 
@@ -113,7 +116,9 @@ def main() -> None:
         per_device_train_batch_size=args.batch, gradient_accumulation_steps=args.accum,
         gradient_checkpointing=True, max_length=args.seq_len,
         fp16=(args.dtype == "fp16"), bf16=False,  # no bf16/tf32 on Pascal
-        logging_steps=10, save_strategy="epoch",
+        logging_steps=10,
+        save_strategy=("steps" if args.save_steps else "epoch"),
+        save_steps=(args.save_steps or 500), save_total_limit=3,
         eval_strategy="epoch" if eval_ds is not None else "no",
         report_to=[],
     )
