@@ -275,3 +275,105 @@ DONE realcode-peft-05: K=30 rows=31
 DONE realcode-trl-00: K=31 rows=32
 DONE realcode-trl-01: K=27 rows=28
 DONE realcode-trl-02: K=25 rows=26
+DONE realcode-transformers-38: K=23 rows=24
+DONE realcode-transformers-39: K=25 rows=26
+DONE realcode-transformers-40: K=30 rows=31
+FAILED realcode-transformers-41: claude -p exit 1: 
+FAILED realcode-transformers-42: claude -p exit 1: 
+FAILED realcode-transformers-43: claude -p exit 1: 
+FAILED realcode-transformers-44: claude -p exit 1: 
+FAILED realcode-transformers-45: claude -p exit 1: 
+FAILED realcode-transformers-46: claude -p exit 1: 
+FAILED realcode-transformers-47: claude -p exit 1: 
+FAILED realcode-transformers-48: claude -p exit 1: 
+FAILED realcode-transformers-49: claude -p exit 1: 
+FAILED realcode-transformers-50: claude -p exit 1: 
+FAILED realcode-transformers-51: claude -p exit 1: 
+FAILED realcode-transformers-52: claude -p exit 1: 
+FAILED realcode-transformers-53: claude -p exit 1: 
+FAILED realcode-transformers-54: claude -p exit 1: 
+FAILED realcode-datasets-00: claude -p exit 1: 
+FAILED realcode-accelerate-01: claude -p exit 1: 
+FAILED realcode-peft-00: claude -p exit 1: 
+FAILED realcode-peft-01: claude -p exit 1: 
+FAILED realcode-peft-02: claude -p exit 1: 
+FAILED realcode-peft-03: claude -p exit 1: 
+FAILED realcode-peft-04: claude -p exit 1: 
+FAILED realcode-peft-05: claude -p exit 1: 
+FAILED realcode-trl-00: claude -p exit 1: 
+FAILED realcode-trl-01: claude -p exit 1: 
+FAILED realcode-trl-02: claude -p exit 1: 
+DONE realcode-transformers-41: K=34 rows=35
+DONE realcode-transformers-42: K=33 rows=34
+FAILED realcode-transformers-43: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-44: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-45: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-46: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-47: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-48: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-49: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-50: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-51: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-52: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-53: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-transformers-54: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-datasets-00: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-accelerate-01: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-00: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-01: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-02: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-03: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-04: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-peft-05: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-trl-00: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-trl-01: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+FAILED realcode-trl-02: all teacher delivery paths failed: KiroClient:empty | ClaudePClient:claude -p exit 1: 
+DONE realcode-transformers-43: K=24 rows=25
+DONE realcode-transformers-44: K=27 rows=28
+FAILED realcode-transformers-45: claude -p exit 1: 
+FAILED realcode-transformers-46: claude -p exit 1: 
+FAILED realcode-transformers-47: claude -p exit 1: 
+FAILED realcode-transformers-48: claude -p exit 1: 
+FAILED realcode-transformers-49: claude -p exit 1: 
+FAILED realcode-transformers-50: claude -p exit 1: 
+FAILED realcode-transformers-51: claude -p exit 1: 
+FAILED realcode-transformers-52: claude -p exit 1: 
+FAILED realcode-transformers-53: claude -p exit 1: 
+FAILED realcode-transformers-54: claude -p exit 1: 
+FAILED realcode-datasets-00: claude -p exit 1: 
+FAILED realcode-accelerate-01: claude -p exit 1: 
+FAILED realcode-peft-00: claude -p exit 1: 
+FAILED realcode-peft-01: claude -p exit 1: 
+FAILED realcode-peft-02: claude -p exit 1: 
+FAILED realcode-peft-03: claude -p exit 1: 
+FAILED realcode-peft-04: claude -p exit 1: 
+FAILED realcode-peft-05: claude -p exit 1: 
+FAILED realcode-trl-00: claude -p exit 1: 
+FAILED realcode-trl-01: claude -p exit 1: 
+FAILED realcode-trl-02: claude -p exit 1: 
+DONE realcode-transformers-45: K=35 rows=36
+FAILED realcode-transformers-46: claude -p exit 1: 
+FAILED realcode-transformers-47: claude -p exit 1: 
+FAILED realcode-transformers-48: claude -p exit 1: 
+FAILED realcode-transformers-49: claude -p exit 1: 
+FAILED realcode-transformers-50: claude -p exit 1: 
+FAILED realcode-transformers-51: claude -p exit 1: 
+FAILED realcode-transformers-52: claude -p exit 1: 
+FAILED realcode-transformers-53: claude -p exit 1: 
+FAILED realcode-transformers-54: claude -p exit 1: 
+FAILED realcode-datasets-00: claude -p exit 1: 
+FAILED realcode-accelerate-01: claude -p exit 1: 
+FAILED realcode-peft-00: claude -p exit 1: 
+FAILED realcode-peft-01: claude -p exit 1: 
+FAILED realcode-peft-02: claude -p exit 1: 
+FAILED realcode-peft-03: claude -p exit 1: 
+FAILED realcode-peft-04: claude -p exit 1: 
+FAILED realcode-peft-05: claude -p exit 1: 
+FAILED realcode-trl-00: claude -p exit 1: 
+FAILED realcode-trl-01: claude -p exit 1: 
+FAILED realcode-trl-02: claude -p exit 1: 
+DONE realcode-transformers-46: K=34 rows=35
+DONE realcode-transformers-47: K=25 rows=26
+DONE realcode-transformers-48: K=38 rows=39
+DONE realcode-transformers-49: K=25 rows=26
+DONE realcode-transformers-50: K=22 rows=23

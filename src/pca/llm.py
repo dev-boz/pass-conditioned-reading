@@ -88,16 +88,27 @@ class ClaudePClient:
     Named limitation, recorded per trajectory: `claude -p` exposes no temperature/seed control,
     so teacher decoding parameters are the CLI defaults — acceptable for a teacher (the student
     distills the behaviour, not the sampler), impossible for a clean comparison arm. Same
-    interface as the other clients so runners use it unchanged."""
+    interface as the other clients so runners use it unchanged.
+
+    When `ssh_host` is set, the identical one-shot runs on that host over ssh (BatchMode key
+    auth) against ITS logged-in OAuth pool — the D30 'remote' delivery path, now available to
+    the teacher. Host and remote exe come from the environment / caller, never from the repo
+    (machine-portable, scrub-safe); provenance records the path as `claude-p-remote`."""
 
     def __init__(self, model: str = "haiku", exe: str | None = None,
-                 timeout: int = 300, **_ignored):
+                 timeout: int = 300, ssh_host: str | None = None,
+                 remote_exe: str | None = None, **_ignored):
         import os
         from shutil import which
 
         self.model = model
         self.exe = exe or os.environ.get("PCA_CLAUDE_EXE") or which("claude") or "claude"
         self.timeout = timeout
+        self.ssh_host = ssh_host
+        # Home-relative, NOT ~-prefixed: ssh runs the remote command from $HOME, and a ~/...
+        # argument launched from a native-Windows parent gets MSYS-path-converted to the LOCAL
+        # home by Git-for-Windows ssh before it leaves the box (the adb lesson, replayed).
+        self.remote_exe = remote_exe or os.environ.get("PCA_REMOTE_CLAUDE") or ".local/bin/claude"
 
     def healthy(self) -> bool:
         return True
@@ -108,17 +119,27 @@ class ClaudePClient:
     def chat(self, system: str, user: str, max_tokens: int = 700,
              temperature: float = 0.0, seed: int = 42) -> dict:
         prompt = (system or "") + "\n\n========\n\n" + (user or "")
-        prov = f"claude-p:{self.model}|temp/seed=cli-defaults"
+        env = None
+        if self.ssh_host:
+            argv = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+                    self.ssh_host, self.remote_exe, "-p", "--model", self.model]
+            prov = f"claude-p-remote:{self.model}|temp/seed=cli-defaults"
+            # Git-for-Windows ssh mangles unix-looking args from native parents; disable.
+            env = {**os.environ, "MSYS_NO_PATHCONV": "1", "MSYS2_ARG_CONV_EXCL": "*"}
+        else:
+            argv = [self.exe, "-p", "--model", self.model]
+            prov = f"claude-p:{self.model}|temp/seed=cli-defaults"
         t0 = time.time()
         try:
-            p = subprocess.run([self.exe, "-p", "--model", self.model],
+            p = subprocess.run(argv,
                                input=prompt, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=self.timeout)
+                               encoding="utf-8", errors="replace", timeout=self.timeout,
+                               env=env)
         except subprocess.TimeoutExpired:
             return {"text": "", "usage": {}, "provider": prov,
                     "wall_s": round(time.time() - t0, 1)}
         if p.returncode != 0:
-            raise RuntimeError(f"claude -p exit {p.returncode}: {(p.stderr or '')[:200]}")
+            raise RuntimeError(f"{prov.split(':', 1)[0]} exit {p.returncode}: {(p.stderr or '')[:200]}")
         return {"text": (p.stdout or "").strip(), "usage": {},
                 "provider": prov, "wall_s": round(time.time() - t0, 1)}
 

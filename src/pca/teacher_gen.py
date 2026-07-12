@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -69,6 +70,15 @@ def make_teacher_client(cfg: dict):
         elif name == "claude_p":
             built.append(ClaudePClient(model=cfg["teacher"]["claude_p"]["model"],
                                        timeout=cfg["teacher"]["timeout_s"]))
+        elif name == "claude_p_remote":
+            # D30 'remote' delivery path: the same claude -p one-shot on a second OAuth host.
+            # Host/exe strictly from the environment — never committed (scrub rule).
+            host = os.environ.get("PCA_CLAUDE_SSH_HOST")
+            if not host:
+                raise ValueError("claude_p_remote backend requires PCA_CLAUDE_SSH_HOST in the environment")
+            built.append(ClaudePClient(model=cfg["teacher"]["claude_p"]["model"],
+                                       timeout=cfg["teacher"]["timeout_s"],
+                                       ssh_host=host))
         else:
             raise ValueError(f"unknown teacher backend: {name}")
     return built[0] if len(built) == 1 else FallbackClient(built)

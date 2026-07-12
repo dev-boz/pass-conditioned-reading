@@ -67,3 +67,9 @@ v3.1, but its persisted trajectory showed the residual invalids were whole-entry
 444/483 chars — over the 400-char fragment cap. Cap raised to 2000 (longer quote = stricter
 verification); attempt #2 stopped after doc 1 rather than spending the remaining ~430 kiro
 calls on a parser known to under-score. Attempt #3 is the scoring run.
+
+**2026-07-12 straggler tail:** `claude_p_remote` added to the teacher fallback chain — the
+D30 'remote' delivery path (same `claude -p --model haiku` one-shot on a second OAuth host
+over ssh; host env-resolved via `PCA_CLAUDE_SSH_HOST`, never committed). Standing order for
+the tail: `kiro → claude_p_remote → claude_p`; per-pass `gen_path` records the serving path
+as always. Kiro account rotations by the maintainer (~50 requests each) keep kiro first.
