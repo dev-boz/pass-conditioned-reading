@@ -22,3 +22,4 @@ experiments/p7_split_unit/*_result.json
 experiments/p7_split_unit/*.log
 experiments/e2prime/leakage_scan.json
 data/e2prime/
+runs/
