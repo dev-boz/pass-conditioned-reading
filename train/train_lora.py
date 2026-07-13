@@ -114,6 +114,9 @@ def main() -> None:
         num_train_epochs=args.epochs, learning_rate=args.lr, lr_scheduler_type="cosine",
         warmup_ratio=0.03, weight_decay=0.0,
         per_device_train_batch_size=args.batch, gradient_accumulation_steps=args.accum,
+        # HF default eval batch is 8: eight seq-4096 rows forward at once ON TOP of the
+        # train-resident weights+optimizer OOM'd the 11GB card at the epoch-1 boundary.
+        per_device_eval_batch_size=1,
         gradient_checkpointing=True, max_length=args.seq_len,
         fp16=(args.dtype == "fp16"), bf16=False,  # no bf16/tf32 on Pascal
         logging_steps=10,
