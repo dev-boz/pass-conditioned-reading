@@ -49,6 +49,9 @@ def main() -> None:
     args = ap.parse_args()
 
     import torch
+    # Same Pascal workaround as train_lora.py: no C compiler in WSL for the Triton shim.
+    from torch._native.registry import deregister_op_overrides
+    deregister_op_overrides(disable_dsl_names=["triton"])
     from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
