@@ -46,14 +46,12 @@ def main() -> None:
     ap.add_argument("--base", default="Qwen/Qwen2.5-1.5B-Instruct")
     ap.add_argument("--max-new", type=int, default=900)
     ap.add_argument("--limit", type=int, default=0, help="cap held-out rows (0 = all)")
+    ap.add_argument("--server", default=None,
+                    help="llama.cpp base URL (e.g. http://127.0.0.1:8093): check the SERVED fp16 "
+                         "GGUF student — the artifact the §3 gates probe — instead of "
+                         "transformers+adapter (which needs ~2× the VRAM of serving). "
+                         "Greedy either way; the parse/metrics are identical.")
     args = ap.parse_args()
-
-    import torch
-    # Same Pascal workaround as train_lora.py: no C compiler in WSL for the Triton shim.
-    from torch._native.registry import deregister_op_overrides
-    deregister_op_overrides(disable_dsl_names=["triton"])
-    from peft import PeftModel
-    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     run = Path(args.run)
     eval_docs = set(json.loads((run / "split.json").read_text(encoding="utf-8"))["eval_docs"])
@@ -63,22 +61,42 @@ def main() -> None:
         held = held[: args.limit]
     print(f"held-out docs: {len(eval_docs)} | held-out pass rows: {len(held)}")
 
-    tok = AutoTokenizer.from_pretrained(str(run / "adapter"))
-    model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=torch.float32,
-                                                 device_map="cuda")
-    model = PeftModel.from_pretrained(model, str(run / "adapter"))
-    model.eval()
+    if args.server:
+        import requests
+
+        def generate(msgs: list[dict]) -> str:
+            r = requests.post(f"{args.server}/v1/chat/completions",
+                              json={"messages": msgs, "max_tokens": args.max_new,
+                                    "temperature": 0.0, "seed": 42}, timeout=1800)
+            r.raise_for_status()
+            return (r.json()["choices"][0]["message"].get("content") or "")
+    else:
+        import torch
+        # Same Pascal workaround as train_lora.py: no C compiler in WSL for the Triton shim.
+        from torch._native.registry import deregister_op_overrides
+        deregister_op_overrides(disable_dsl_names=["triton"])
+        from peft import PeftModel
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        tok = AutoTokenizer.from_pretrained(str(run / "adapter"))
+        model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=torch.float32,
+                                                     device_map="cuda")
+        model = PeftModel.from_pretrained(model, str(run / "adapter"))
+        model.eval()
+
+        def generate(msgs: list[dict]) -> str:
+            enc = tok.apply_chat_template(msgs, add_generation_prompt=True,
+                                          return_tensors="pt", return_dict=True).to("cuda")
+            with torch.no_grad():
+                out = model.generate(**enc, max_new_tokens=args.max_new, do_sample=False,
+                                     pad_token_id=tok.eos_token_id)
+            return tok.decode(out[0, enc["input_ids"].shape[1]:], skip_special_tokens=True)
 
     v_sum = c_sum = 0
     agree, per_doc = [], Counter()
     for i, r in enumerate(held):
         msgs = r["prompt"]
-        enc = tok.apply_chat_template(msgs, add_generation_prompt=True,
-                                      return_tensors="pt", return_dict=True).to("cuda")
-        with torch.no_grad():
-            out = model.generate(**enc, max_new_tokens=args.max_new, do_sample=False,
-                                 pad_token_id=tok.eos_token_id)
-        text = tok.decode(out[0, enc["input_ids"].shape[1]:], skip_special_tokens=True)
+        text = generate(msgs)
         # parse both against a state reconstructed from the prompt is unnecessary for
         # these metrics: validity needs id-resolvability, so rebuild ids from the STATE
         # block of the prompt (S\d+ lines) — the same context the teacher saw.
@@ -102,6 +120,7 @@ def main() -> None:
     report = {"validity": round(validity, 4), "agreement": round(agreement, 4),
               "n_rows": len(held), "n_docs": len(eval_docs), "verdict": verdict,
               "bars": {"validity": 0.95, "agreement": 0.75},
+              "mode": ("server-gguf" if args.server else "transformers-adapter"),
               "worst_docs": per_doc.most_common(5)}
     (run / "pc_check.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     print(f"\nP-C: validity={validity:.3f} (≥0.95) agreement={agreement:.3f} (≥0.75) → {verdict}")
