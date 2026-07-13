@@ -63,3 +63,27 @@ Per E2PRIME-CRITERION §1 P-C: fix data/hyperparameters and retrain; no capabili
 
 Run-1 artifacts are retained (`runs/stageA_coupled/`, pc_check.json mode=server-gguf) as
 the audit trail of the defect.
+
+### Run-2 feasibility probes (2026-07-14, pre-launch — the 11 GB wall, measured)
+
+Sequence-length probes on the idle card (fwd/bwd through the exact training config):
+
+- **Stock SDPA**: fp32@8192, fp16@8192, fp16@10240 all OOM. Pascal (sm_61) has no fused
+  attention; torch's math backend materialises the n² score matrix in fp32 for BOTH input
+  dtypes (half inputs are upcast for softmax).
+- **Chunked causal SDPA built** (`train/chunked_attn.py`, flash-style online softmax,
+  q-block nested checkpointing; equivalence-gated fwd+grads vs stock at 2e-5/5e-5 fp32 —
+  `train/test_chunked_attn.py`, all cases pass). Attention memory solved.
+- **fp32@10240 with chunked attention still OOMs** — the next wall is dtype-fundamental:
+  fp32 weights (6.2 GB) + 28-layer boundary activations at 10K (1.8 GB) + the LM-head
+  logits path ([1, 10240, 151936] fp32 = 6.2 GB, plus the CE fp32 copy) exceed 11 GB.
+  **Full-corpus-window fp32 training does not fit this card. Fork presented to the
+  maintainer** (options a/b/c below); no run-2 launch until decided.
+
+  (a) rent a 24-48 GB cloud GPU for the 1-2 day run — stock kernels, pre-registered fp32
+      preserved, ~US$15-30;
+  (b) local fp16 mixed precision + chunked attention + a chunked cross-entropy (transformers
+      upcasts full logits to fp32 for CE — must be chunked too) — free, ~2-2.5 days, three
+      deviation surfaces (dtype dynamics, custom attention [validated], custom loss);
+  (c) local fp32 at a ~6144 window — free, stock-ish, but the gate altitude (~8.5K prompts)
+      is then OUTSIDE the trained envelope and synthcode retention drops to ~25-30%: weak.

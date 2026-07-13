@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 
@@ -46,6 +47,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--save-steps", type=int, default=25,
                    help="checkpoint every N optimizer steps (0 = per-epoch only). Pause/resume "
                         "granularity — cadence does not alter the optimization trajectory")
+    p.add_argument("--attn", choices=["stock", "chunked"], default="stock",
+                   help="'chunked' = flash-style O(n·block) causal SDPA (train/chunked_attn.py, "
+                        "equivalence-gated) — required for seq >~6K on Pascal, where every stock "
+                        "path materialises the fp32 n^2 score matrix (D34)")
     return p.parse_args()
 
 
@@ -93,6 +98,12 @@ def main() -> None:
     # the COMPLETION off every row longer than max_length — 74-81% of the code slices trained
     # with no signal. A row either fits the window whole or is excluded and logged; truncation
     # must never be the thing that touches a training row.
+    attn_impl = "sdpa"
+    if args.attn == "chunked":
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from chunked_attn import register
+        attn_impl = register()
+
     dtype = torch.float32 if args.dtype == "fp32" else torch.float16
     tok = AutoTokenizer.from_pretrained(args.base)
 
@@ -118,7 +129,8 @@ def main() -> None:
         "seq_len": args.seq_len, "dropped_over_window": dict(dropped),
         "eval_docs": sorted({r["doc_id"] for r in eval_rows}),
     }, indent=1), encoding="utf-8")
-    model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=dtype, device_map="cuda")
+    model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=dtype, device_map="cuda",
+                                                 attn_implementation=attn_impl)
     model.config.use_cache = False
 
     # prompt/completion columns -> TRL applies the chat template and masks prompt tokens
