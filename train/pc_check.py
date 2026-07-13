@@ -123,7 +123,9 @@ def main() -> None:
               "mode": ("server-gguf" if args.server else "transformers-adapter"),
               "worst_docs": per_doc.most_common(5)}
     (run / "pc_check.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
-    print(f"\nP-C: validity={validity:.3f} (≥0.95) agreement={agreement:.3f} (≥0.75) → {verdict}")
+    # ASCII only: '>=' not the math glyph — a cp1252-redirected stdout on Windows dies on it
+    # (run 1 wrote the report then crashed on this very line).
+    print(f"\nP-C: validity={validity:.3f} (>=0.95) agreement={agreement:.3f} (>=0.75) -> {verdict}")
     print(f"report: {run/'pc_check.json'}")
 
 

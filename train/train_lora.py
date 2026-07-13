@@ -88,14 +88,36 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     rows = load_rows(Path(args.data))
+
+    # Length gate (run-1 post-mortem, D34): TRL's default keep_start truncation silently cut
+    # the COMPLETION off every row longer than max_length — 74-81% of the code slices trained
+    # with no signal. A row either fits the window whole or is excluded and logged; truncation
+    # must never be the thing that touches a training row.
+    dtype = torch.float32 if args.dtype == "fp32" else torch.float16
+    tok = AutoTokenizer.from_pretrained(args.base)
+
+    def full_len(r: dict) -> int:
+        ids = tok.apply_chat_template(r["prompt"] + r["completion"], tokenize=True,
+                                      return_dict=True)["input_ids"]
+        return len(ids)
+
+    from collections import Counter
+    kept, dropped = [], Counter()
+    for r in rows:
+        if full_len(r) <= args.seq_len:
+            kept.append(r)
+        else:
+            dropped[r["doc_id"].split("-")[0]] += 1
+    print(f"length gate @ {args.seq_len}: kept {len(kept)}/{len(rows)} rows; "
+          f"dropped per slice: {dict(dropped)}")
+    rows = kept
+
     train_rows, eval_rows = split_by_doc(rows, args.eval_frac, args.seed)
     (out / "split.json").write_text(json.dumps({
         "n_train": len(train_rows), "n_eval": len(eval_rows),
+        "seq_len": args.seq_len, "dropped_over_window": dict(dropped),
         "eval_docs": sorted({r["doc_id"] for r in eval_rows}),
     }, indent=1), encoding="utf-8")
-
-    dtype = torch.float32 if args.dtype == "fp32" else torch.float16
-    tok = AutoTokenizer.from_pretrained(args.base)
     model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=dtype, device_map="cuda")
     model.config.use_cache = False
 
