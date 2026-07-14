@@ -157,3 +157,30 @@ logits, stops being the bottleneck. Smoke-tested end-to-end through the actual `
 `runs/stageA_coupled_v2/`, `--seq-len 10240 --dtype bf16 --liger --merge`.
 
 Amended to D34 in DECISIONS.md.
+
+## Run-2 P-C: PASS (2026-07-15)
+
+Envelope protocol applied (D34/D35): 322 held-out pass rows (13 eval docs) split by full
+tokenized length against the trainer's recorded `seq_len=10240` → **213 in-envelope / 109
+out-of-envelope**. Served fp16 GGUF (`stageA_v2-f16.gguf`, llama.cpp, 24K ctx — held prompts
+reach ~19K, learned from run-1's 16K-context 400 error).
+
+**In-envelope (n=213, the verdict): validity 0.9699 (bar ≥0.95), agreement 0.7606 (bar
+≥0.75) → PASS.** Both bars cleared, margins real but not wide (+0.020 / +0.011) — this
+tracked as a close call through the running numbers (agreement dipped under 0.75 as late as
+200/213 before the final 13 rows carried it over).
+
+**Out-of-envelope appendix (n=109, NOT counted toward the verdict): validity 0.8346,
+agreement 0.3211.** Sharp, expected degradation — these are exactly the rows the length gate
+excluded from training. The gap between envelope and appendix numbers is itself a sanity
+check that the length gate and the envelope-scoped P-C protocol are doing their job: a
+model trained on a bounded window degrades outside it, which is the unremarkable, predicted
+shape, not a red flag.
+
+Full report: `runs/stageA_coupled_v2/pc_check.json`. Worst in-envelope docs are the same
+synthcode docs that dominate the out-of-envelope appendix (20001, 20010, 20060) — plausibly
+the corpus's longest/most structurally demanding synthetic docs, consistent across both
+splits rather than a new failure mode.
+
+**Run-2 clears E2PRIME-CRITERION §1 P-C. Next: the chain gate (§3) — query-conditioned
+framing, n=10 temp-0.7 + temp-0 anchor, same-base untrained floor arm.**
