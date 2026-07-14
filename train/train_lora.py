@@ -1,8 +1,17 @@
 """E2′ student trainer — LoRA SFT on teacher trajectories (Stage A: coupled/explicit).
 
-Runs in the WSL2 venv (~/e2prime-venv) on the 1080 Ti. Pascal (sm_61) note: consumer
-Pascal fp16 math is ~1/64 rate and bf16/tf32 don't exist there, so the default is fp32
-compute with fp16 available behind a flag for memory-bound configs (slower per-step).
+Run-1 (WSL2 venv ~/e2prime-venv, 1080 Ti, Pascal sm_61): fp32 default — consumer Pascal
+fp16 math is ~1/64 rate and bf16/tf32 don't exist there. Failed its P-C check; root cause
+was TRL's default truncation, not this trainer (see docs/HANDOFF-2026-07-14.md, D34).
+
+Run-2 (rented Ampere/Ada cloud GPU, seq_len 10240): fp32/bf16-without-liger both OOM even
+on 24GB at this window — HF's ForCausalLMLoss unconditionally does `logits.float()`, a
+dtype-invariant ~vocab*seq*4-byte tensor (plus coexisting copies in the CE backward) that
+persists regardless of model dtype. Validated fix: `--dtype bf16 --liger` (liger-kernel's
+fused_linear_cross_entropy chunks the lm_head+CE so the full [seq,vocab] logits tensor is
+never materialised) — measured peak 5.9GiB at seq 10240 on an A5000, vs 23.5GB+ OOM
+without it. `--attn chunked` remains the Pascal fix (D34) and is not needed on Ampere+,
+where stock SDPA already dispatches a real flash/efficient kernel.
 
 Data: JSONL rows {"prompt": [chat messages], "completion": [assistant message]} rendered
 by src/pca/teacher_gen.py (one row per pass; loss on completion tokens only — TRL
@@ -10,11 +19,11 @@ prompt-completion masking). The renderer, not this script, owns arm/channel form
 so one trainer serves every Stage A/B/C student.
 
     python train_lora.py --data data/e2prime/stageA_coupled.jsonl \
-        --base Qwen/Qwen2.5-1.5B-Instruct --out runs/stageA_coupled \
-        [--merge]   # also save merged fp16 weights for llama.cpp GGUF conversion
+        --base Qwen/Qwen2.5-1.5B-Instruct --out runs/stageA_coupled_v2 \
+        --seq-len 10240 --dtype bf16 --liger --merge
 
 Hyperparameter defaults are the pre-registered engineering defaults
-(docs/E2PRIME-PREREG.md §2); they freeze when data generation begins.
+(docs/E2PRIME-PREREG.md §2); dtype/liger/attn are run-2 amendments, not defaults.
 """
 
 from __future__ import annotations
@@ -39,7 +48,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--batch", type=int, default=1)
     p.add_argument("--accum", type=int, default=16)
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--dtype", choices=["fp32", "fp16"], default="fp32")
+    p.add_argument("--dtype", choices=["fp32", "fp16", "bf16"], default="fp32")
+    p.add_argument("--liger", action="store_true",
+                   help="apply_liger_kernel_to_qwen2(fused_linear_cross_entropy=True) — required "
+                        "at seq_len>~6K on any GPU: HF's ForCausalLMLoss unconditionally does "
+                        "logits.float(), a dtype-invariant ~vocab*seq*4-byte tensor (plus the CE "
+                        "backward's coexisting copies) that no dtype change shrinks (D34 amendment, "
+                        "run-2 cloud probes). Liger fuses the lm_head projection with a chunked CE "
+                        "so the full [seq,vocab] logits tensor is never materialised.")
     p.add_argument("--eval-frac", type=float, default=0.05,
                    help="held-out fraction, split by DOC ID (never by row) for the P-C health check")
     p.add_argument("--merge", action="store_true", help="save merged weights after training")
@@ -108,7 +124,11 @@ def main() -> None:
         from chunked_attn import register
         attn_impl = register()
 
-    dtype = torch.float32 if args.dtype == "fp32" else torch.float16
+    _DTYPES = {"fp32": torch.float32, "fp16": torch.float16, "bf16": torch.bfloat16}
+    dtype = _DTYPES[args.dtype]
+    if args.liger:
+        from liger_kernel.transformers import apply_liger_kernel_to_qwen2
+        apply_liger_kernel_to_qwen2(fused_linear_cross_entropy=True)
     tok = AutoTokenizer.from_pretrained(args.base)
 
     def full_len(r: dict) -> int:
@@ -156,7 +176,7 @@ def main() -> None:
         # train-resident weights+optimizer OOM'd the 11GB card at the epoch-1 boundary.
         per_device_eval_batch_size=1,
         gradient_checkpointing=True, max_length=args.seq_len,
-        fp16=(args.dtype == "fp16"), bf16=False,  # no bf16/tf32 on Pascal
+        fp16=(args.dtype == "fp16"), bf16=(args.dtype == "bf16"),
         logging_steps=10,
         save_strategy=("steps" if args.save_steps else "epoch"),
         save_steps=(args.save_steps or 500), save_total_limit=3,

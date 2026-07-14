@@ -12,12 +12,17 @@ from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM
 
 seq = int(sys.argv[1])
-dtype = torch.float16 if (len(sys.argv) > 2 and sys.argv[2] == "fp16") else torch.float32
+_DTYPES = {"fp16": torch.float16, "bf16": torch.bfloat16, "fp32": torch.float32}
+dtype = _DTYPES.get(sys.argv[2] if len(sys.argv) > 2 else "fp32", torch.float32)
 attn = "sdpa"
 if len(sys.argv) > 3 and sys.argv[3] == "chunked":
     sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
     from chunked_attn import register
     attn = register()
+liger = len(sys.argv) > 3 and sys.argv[3] == "liger"
+if liger:
+    from liger_kernel.transformers import apply_liger_kernel_to_qwen2
+    apply_liger_kernel_to_qwen2(fused_linear_cross_entropy=True)
 DEV = "cpu" if (len(sys.argv) > 4 and sys.argv[4] == "cpu") else "cuda"
 if DEV == "cpu":
     torch.set_num_threads(24)
