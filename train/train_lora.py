@@ -81,9 +81,13 @@ def main() -> None:
     # the Triton CUDA driver shim (CudaUtils).  On machines without gcc/clang this
     # raises RuntimeError at the first bmm call (Qwen2 RoPE outer-product path).
     # Deregister the Triton override so aten::bmm falls back to the regular CUDA
-    # kernel.  This is the minimal fix; no other behaviour changes.
-    from torch._native.registry import deregister_op_overrides
-    deregister_op_overrides(disable_dsl_names=["triton"])
+    # kernel. WSL-without-a-compiler-only; no-op (module absent) where gcc/clang
+    # exists, e.g. the run-2 cloud pod (D34 amendment).
+    try:
+        from torch._native.registry import deregister_op_overrides
+        deregister_op_overrides(disable_dsl_names=["triton"])
+    except ImportError:
+        pass
     from datasets import Dataset
     from peft import LoraConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer

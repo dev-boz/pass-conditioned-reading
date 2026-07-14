@@ -72,9 +72,13 @@ def main() -> None:
             return (r.json()["choices"][0]["message"].get("content") or "")
     else:
         import torch
-        # Same Pascal workaround as train_lora.py: no C compiler in WSL for the Triton shim.
-        from torch._native.registry import deregister_op_overrides
-        deregister_op_overrides(disable_dsl_names=["triton"])
+        # Same Pascal workaround as train_lora.py: no C compiler in WSL for the Triton shim;
+        # no-op (module absent) wherever gcc/clang exists.
+        try:
+            from torch._native.registry import deregister_op_overrides
+            deregister_op_overrides(disable_dsl_names=["triton"])
+        except ImportError:
+            pass
         from peft import PeftModel
         from transformers import AutoModelForCausalLM, AutoTokenizer
 

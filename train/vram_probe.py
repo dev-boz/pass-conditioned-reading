@@ -3,8 +3,11 @@ Prints peak VRAM. Usage: vram_probe.py <seq_len>"""
 import sys
 
 import torch
-from torch._native.registry import deregister_op_overrides
-deregister_op_overrides(disable_dsl_names=["triton"])
+try:  # WSL-without-a-C-compiler workaround only; no-op where gcc/clang exists (D34 amendment)
+    from torch._native.registry import deregister_op_overrides
+    deregister_op_overrides(disable_dsl_names=["triton"])
+except ImportError:
+    pass
 from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM
 
