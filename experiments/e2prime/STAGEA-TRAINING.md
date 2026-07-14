@@ -87,3 +87,73 @@ Sequence-length probes on the idle card (fwd/bwd through the exact training conf
       deviation surfaces (dtype dynamics, custom attention [validated], custom loss);
   (c) local fp32 at a ~6144 window — free, stock-ish, but the gate altitude (~8.5K prompts)
       is then OUTSIDE the trained envelope and synthcode retention drops to ~25-30%: weak.
+
+**Maintainer chose (a) (2026-07-14)**, rented via RunPod (RTX A5000, 24GB, Ampere sm_86).
+Full account of the cloud leg below — the "just rent a bigger card" option turned out to
+have its own chapter, not a clean escape from engineering.
+
+## Run-2 on RunPod: connectivity, then a second memory wall (2026-07-14)
+
+**Connectivity.** The pod's default `ssh.runpod.io` proxy connection only supports
+interactive-PTY shell sessions — plain non-PTY exec ("your SSH client doesn't support
+PTY") and the SFTP/SCP subsystem ("subsystem request failed") are both rejected outright.
+Fed commands via `ssh -tt ... <<'EOF' ... EOF` (stdin into the forced-PTY shell) as a
+workaround for one-off checks. For the 139MB training-data transfer, switched to the pod's
+**Direct TCP port mapping** (`<ip>:<mapped-port> -> :22`, shown separately in RunPod's
+Connect tab) — a real sshd, full scp/rsync, no PTY games. That sshd's `authorized_keys`
+contained a literal `null\nnull` placeholder (a template artifact, not the account's key) —
+fixed by writing the real key via the still-working proxy shell. Direct-port scp confirmed
+byte-identical (md5sum match) for the 139MB data file.
+
+**Packages.** Pod's template had bare `torch==2.8.0+cu128` only; pinned the rest to the
+versions validated locally: `transformers==5.13.0 datasets==5.0.0 accelerate==1.14.0
+peft==0.19.1 trl==1.8.0` (`pip install --break-system-packages` — Debian's PEP 668 guard,
+irrelevant on a disposable single-purpose training container). The WSL Triton-deregister
+workaround (D34, `torch._native` absent + gcc present here) needed no action beyond making
+it `try/except ImportError`-safe, since it's WSL-without-a-compiler-specific.
+
+**A second, independent memory wall.** Even on 24GB, fp32 at seq 10240 OOM'd at 23.48GB in
+use (inside `scaled_dot_product_attention`); `expandable_segments` allocator tuning made it
+marginally worse, not better (pure fragmentation wasn't the story). Root cause, confirmed
+by reading the installed `transformers` source directly (`loss/loss_utils.py:ForCausalLMLoss`
+does `logits = logits.float()` unconditionally, three call sites): the LM-head/cross-entropy
+path materialises a `[seq, vocab]` = `[10240, 151936]` **fp32** tensor — 6.2GB by itself,
+more with the composite `log_softmax`+`nll_loss` backward needing further same-shape fp32
+buffers alive simultaneously — **regardless of the model's own dtype**. Switching to bf16
+alone barely moved the ceiling (23.31GB, same OOM site) — expected, since this tax is
+dtype-invariant.
+
+**A confound inside the confound.** While diagnosing, found that `vram_probe.py` never
+called `model.train()` — and gradient checkpointing's actual recompute is gated on
+`self.training`, not just the enable flag. On/off/non-reentrant checkpointing all gave an
+*identical* ~15.8-16GB peak at seq 2048 until `model.train()` was added explicitly, at
+which point peak dropped to ~7.2GB — checkpointing had been silently inert in every
+probe run up to that point. This was a **probe-script bug, not a trainer bug**: TRL's
+`SFTTrainer` calls `model.train()` as standard practice, so the real training path was
+never actually exposed to it — but it invalidated every VRAM number measured before the
+fix, including the first bf16-alone and bf16+liger attempts, which had to be re-run clean.
+
+**Consulted three external models** (via the maintainer relaying prompts) on the
+CE/logits problem; independently converged on the same diagnosis and remedy (liger-kernel's
+fused linear+cross-entropy, chunking the vocab dimension so the full logits tensor is never
+materialised) with different levels of arithmetic precision on *why* bf16-alone should or
+shouldn't be expected to clear it. One response additionally predicted, from the exact
+allocator failure size, that the probe was likely still holding the full model-output
+object (with its logits) alive across `.backward()` — Python doesn't free it just because
+only `.loss` is used — and that the real `SFTTrainer` (whose `compute_loss` returns only
+the loss scalar) probably wouldn't share this specific failure mode. Plausible and not
+pursued further empirically: liger already gives a much larger, more robust margin than a
+"bf16-alone-with-careful-object-lifetime" path would (see below), so there was no reason to
+chase the fragile option once the robust one was validated.
+
+**Validated fix**: `--dtype bf16 --liger` (`liger_kernel.transformers
+.apply_liger_kernel_to_qwen2(fused_linear_cross_entropy=True)`, applied before model load).
+Clean re-test (with the checkpointing fix in place) at seq 10240: **peak 5.78-5.92 GiB**,
+~3.1s/step — vs 23.5GB+ OOM without it. `--attn chunked` (the Pascal fix) is unnecessary on
+Ampere+, where stock SDPA already dispatches a real flash/efficient kernel once seq², not
+logits, stops being the bottleneck. Smoke-tested end-to-end through the actual `SFTTrainer`
+(not just the raw probe) on 300 real rows, 1 epoch: clean run, `train_loss` 0.9444→0.8885,
+`eval_loss` 0.8876, no errors. Full run launched on all 277 docs / 5,730 rows,
+`runs/stageA_coupled_v2/`, `--seq-len 10240 --dtype bf16 --liger --merge`.
+
+Amended to D34 in DECISIONS.md.
