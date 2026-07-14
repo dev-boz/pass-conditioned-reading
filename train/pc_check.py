@@ -13,6 +13,14 @@ production v3.2 harness, and report:
 Below either bar the run is a TRAINING failure: fix data/hyperparameters and retrain —
 no capability fork may be invoked (criterion §1 P-C).
 
+**Envelope protocol (D34, run-2, pre-committed before any run-2 result existed):** the
+trainer's length gate means held-out rows can still exceed the training window (excluded
+from training, never from eval). Bars are scored ONLY on held rows whose full
+prompt+completion length fits within `split.json`'s recorded `seq_len` — the envelope the
+student actually trained on, which the pre-reg established covers the §3 gate altitude.
+Over-window held rows are still generated and parsed but reported as a separate
+out-of-envelope appendix, never counted toward the verdict.
+
   ~/e2prime-venv/bin/python train/pc_check.py --run runs/stageA_coupled \
       --data data/e2prime/stageA_coupled.jsonl [--base Qwen/Qwen2.5-1.5B-Instruct]
 """
@@ -54,12 +62,29 @@ def main() -> None:
     args = ap.parse_args()
 
     run = Path(args.run)
-    eval_docs = set(json.loads((run / "split.json").read_text(encoding="utf-8"))["eval_docs"])
+    split = json.loads((run / "split.json").read_text(encoding="utf-8"))
+    eval_docs = set(split["eval_docs"])
+    seq_len = split.get("seq_len")  # absent = pre-D34 run (no length gate, no envelope split)
     rows = [json.loads(l) for l in open(args.data, encoding="utf-8") if l.strip()]
     held = [r for r in rows if r["doc_id"] in eval_docs and r["stage"] != "closing"]
     if args.limit:
         held = held[: args.limit]
-    print(f"held-out docs: {len(eval_docs)} | held-out pass rows: {len(held)}")
+
+    from transformers import AutoTokenizer
+    len_tok = AutoTokenizer.from_pretrained(args.base)
+
+    def full_len(r: dict) -> int:
+        ids = len_tok.apply_chat_template(r["prompt"] + r["completion"], tokenize=True,
+                                          return_dict=True)["input_ids"]
+        return len(ids)
+
+    if seq_len:
+        in_env = [r for r in held if full_len(r) <= seq_len]
+        out_env = [r for r in held if full_len(r) > seq_len]
+    else:
+        in_env, out_env = held, []
+    print(f"held-out docs: {len(eval_docs)} | held-out pass rows: {len(held)} "
+          f"| in-envelope (<= {seq_len}): {len(in_env)} | out-of-envelope: {len(out_env)}")
 
     if args.server:
         import requests
@@ -96,40 +121,51 @@ def main() -> None:
                                      pad_token_id=tok.eos_token_id)
             return tok.decode(out[0, enc["input_ids"].shape[1]:], skip_special_tokens=True)
 
-    v_sum = c_sum = 0
-    agree, per_doc = [], Counter()
-    for i, r in enumerate(held):
-        msgs = r["prompt"]
-        text = generate(msgs)
-        # parse both against a state reconstructed from the prompt is unnecessary for
-        # these metrics: validity needs id-resolvability, so rebuild ids from the STATE
-        # block of the prompt (S\d+ lines) — the same context the teacher saw.
-        import re
-        state_ids = set(re.findall(r"^(S\d+[A-Za-z]?):", msgs[1]["content"], re.M))
-        next_id = max([int(re.sub(r"[A-Za-z]", "", s[1:])) for s in state_ids], default=0) + 1
-        sres = parse_ops(text, state_ids, next_id)
-        tres = parse_ops(r["completion"][0]["content"], state_ids, next_id)
-        v_sum += sres.valid
-        c_sum += sres.candidate_lines
-        a = dominant(sres.ops) == dominant(tres.ops)
-        agree.append(a)
-        per_doc[r["doc_id"]] += (not a)
-        if (i + 1) % 25 == 0:
-            print(f"  {i+1}/{len(held)} | running validity "
-                  f"{v_sum/max(c_sum,1):.3f} | agreement {sum(agree)/len(agree):.3f}")
+    import re
 
-    validity = v_sum / max(c_sum, 1)
-    agreement = sum(agree) / max(len(agree), 1)
-    verdict = "PASS" if (validity >= 0.95 and agreement >= 0.75) else "TRAINING FAILURE (P-C)"
-    report = {"validity": round(validity, 4), "agreement": round(agreement, 4),
-              "n_rows": len(held), "n_docs": len(eval_docs), "verdict": verdict,
-              "bars": {"validity": 0.95, "agreement": 0.75},
+    def score(rows_subset: list[dict], label: str) -> dict:
+        v_sum = c_sum = 0
+        agree, per_doc = [], Counter()
+        for i, r in enumerate(rows_subset):
+            msgs = r["prompt"]
+            text = generate(msgs)
+            # parse both against a state reconstructed from the prompt is unnecessary for
+            # these metrics: validity needs id-resolvability, so rebuild ids from the STATE
+            # block of the prompt (S\d+ lines) — the same context the teacher saw.
+            state_ids = set(re.findall(r"^(S\d+[A-Za-z]?):", msgs[1]["content"], re.M))
+            next_id = max([int(re.sub(r"[A-Za-z]", "", s[1:])) for s in state_ids], default=0) + 1
+            sres = parse_ops(text, state_ids, next_id)
+            tres = parse_ops(r["completion"][0]["content"], state_ids, next_id)
+            v_sum += sres.valid
+            c_sum += sres.candidate_lines
+            a = dominant(sres.ops) == dominant(tres.ops)
+            agree.append(a)
+            per_doc[r["doc_id"]] += (not a)
+            if (i + 1) % 25 == 0:
+                print(f"  [{label}] {i+1}/{len(rows_subset)} | running validity "
+                      f"{v_sum/max(c_sum,1):.3f} | agreement {sum(agree)/len(agree):.3f}")
+        validity = v_sum / max(c_sum, 1)
+        agreement = sum(agree) / max(len(agree), 1)
+        return {"validity": round(validity, 4), "agreement": round(agreement, 4),
+                "n_rows": len(rows_subset), "worst_docs": per_doc.most_common(5)}
+
+    in_result = score(in_env, "in-envelope")
+    verdict = ("PASS" if (in_result["validity"] >= 0.95 and in_result["agreement"] >= 0.75)
+               else "TRAINING FAILURE (P-C)")
+    out_result = score(out_env, "out-of-envelope") if out_env else None
+
+    report = {**in_result, "n_docs": len(eval_docs), "verdict": verdict,
+              "bars": {"validity": 0.95, "agreement": 0.75}, "seq_len_envelope": seq_len,
               "mode": ("server-gguf" if args.server else "transformers-adapter"),
-              "worst_docs": per_doc.most_common(5)}
+              "out_of_envelope_appendix": out_result}
     (run / "pc_check.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     # ASCII only: '>=' not the math glyph — a cp1252-redirected stdout on Windows dies on it
     # (run 1 wrote the report then crashed on this very line).
-    print(f"\nP-C: validity={validity:.3f} (>=0.95) agreement={agreement:.3f} (>=0.75) -> {verdict}")
+    print(f"\nP-C (in-envelope, n={in_result['n_rows']}): validity={in_result['validity']:.3f} "
+          f"(>=0.95) agreement={in_result['agreement']:.3f} (>=0.75) -> {verdict}")
+    if out_result:
+        print(f"P-C out-of-envelope appendix (n={out_result['n_rows']}, NOT counted toward "
+              f"verdict): validity={out_result['validity']:.3f} agreement={out_result['agreement']:.3f}")
     print(f"report: {run/'pc_check.json'}")
 
 
