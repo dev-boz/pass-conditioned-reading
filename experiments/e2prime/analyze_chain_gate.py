@@ -233,6 +233,21 @@ def arm_report(arm: str, recs: list[dict]) -> dict:
     print(f"    MECHANICAL candidate successes             : {rate('candidate_success')}"
           f"   <- hand-verify each before any verdict")
 
+    # P7 discipline: a zero is only interpretable ALONGSIDE op-following. An arm that barely emits
+    # applicable ops has an empty state to close from, and its 0/10 is protocol transfer rather
+    # than evidence about the architecture. This is the floor's main confound and it is reported,
+    # not assumed away.
+    n_p = sum(len(r["passes"]) for r in sampled) or 1
+    ops_pass = sum(len(p["ops"]) for r in sampled for p in r["passes"]) / n_p
+    app_pass = sum(p["n_ops_applied"] for r in sampled for p in r["passes"]) / n_p
+    ent = sum(len(r["final_state"].splitlines()) for r in sampled) / max(len(sampled), 1)
+    tok = sum(r["final_state_tokens"] for r in sampled) / max(len(sampled), 1)
+    print(f"\n  op-following: {ops_pass:.1f} ops/pass emitted, {app_pass:.1f} applied/pass; "
+          f"final state {ent:.0f} entries / {tok:.0f} tok on average")
+    if app_pass < 1.0:
+        print("    !! WEAK OP-FOLLOWER: this arm barely builds a state at all, so its rate is "
+              "protocol transfer, not architecture evidence (P7 reading rule).")
+
     why_counts = Counter(classify_close(r) for r in sampled)
     print(f"\n  closing outcomes: {dict(why_counts)}")
     g: Counter = Counter()
