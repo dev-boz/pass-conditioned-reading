@@ -62,13 +62,15 @@ def classify_close(rec: dict) -> str:
         return "http_error"
     if "INSUFFICIENT" in t:
         return "declared_insufficient"
-    # A trailing period is NOT evidence of a clean stop when it sits inside a number: the observed
-    # cut-offs land mid-literal ("weight>0."), which an endswith('.') test reads as a finished
-    # sentence. The decisive signal would be the server's usage.completion_tokens, which these
-    # records do not archive (fixed in the runner for later runs), so this stays a heuristic.
-    if t and (re.search(r"\d[.,]$", t) or not t.endswith((".", "!", "?", '"', ")", "`"))):
-        return "no_answer_line__decode_cap(heuristic)"
-    return "no_answer_line__other"
+    # Do NOT assert a cause that cannot be established from the text. Ending shape alone fails in
+    # both directions: a cut-off lands mid-literal ("weight>0.") and reads as a finished sentence,
+    # while a genuine finished sentence can end on a number ("... is 23.") and read as a cut-off.
+    # Report the EVIDENCE instead — length relative to the budget — and let the budget diagnostic,
+    # which has the server's own completion_tokens, settle it. Threshold is deliberately loose
+    # because the reply is counted in cl100k here and spent in Qwen tokens by the server.
+    budget = rec["_meta"].get("closing_max_tokens") or 1200
+    return ("no_answer_line__near_budget" if rec["closing"]["closing_tokens"] >= 0.7 * budget
+            else "no_answer_line__stopped_early")
 
 
 QCODE = SPEC["queried_code"]                      # 23
@@ -137,6 +139,16 @@ def components(rec: dict) -> dict:
             and _int_present(rec["closing"]["raw_output"] or "", TVAL)
             and _int_present(rec["closing"]["raw_output"] or "", ADDER)),
         "stored_flag_disagrees": (ever_map != any(p["flags"]["queried_mapping"] for p in passes)),
+        # COMPOSE is only interpretable on draws that actually reached close holding both operands;
+        # elsewhere the chain already failed upstream and the close says nothing about composing.
+        "compose_interpretable": fin["queried_mapping"] and fin["adder_value_present"],
+        # A model that reasons to a wrong number in prose without emitting the required ANSWER line
+        # has still composed-and-failed. Scoring stays on the frozen ANSWER format; this is only so
+        # a reasoning failure is not filed as a formatting failure in the attribution.
+        "prose_number_without_answer_line": (
+            rec["closing"]["answer"] is None
+            and bool(re.search(r"\breturns?\b[^.]{0,80}?(?<!\d)\d{1,6}(?!\d)",
+                               rec["closing"]["raw_output"] or ""))),
     }
 
 
@@ -189,7 +201,13 @@ def arm_report(arm: str, recs: list[dict]) -> dict:
     print(f"    RECORD  both operands hosted at any pass   : {rate('RECORD_both_ever')}")
     print(f"    RETAIN  both operands present at close     : {rate('RETAIN_both_at_close')}")
     print(f"    (lost after recording, retention failure)  : {rate('LOST_after_recording')}")
+    n_interp = sum(r["compose_interpretable"] for r in rows)
+    n_comp = sum(r["COMPOSE_returns_2353"] for r in rows)
     print(f"    COMPOSE close returns 2353                 : {rate('COMPOSE_returns_2353')}")
+    print(f"      of draws that reached close WITH both    : {n_comp}/{n_interp}"
+          f"   <- the only draws where COMPOSE is interpretable")
+    print(f"      wrong number in prose, no ANSWER line    : {rate('prose_number_without_answer_line')}"
+          f"   <- reasoning failure, not formatting")
     print(f"    state already held 2353 before close       : {rate('precomposed_in_state')}")
     print(f"    23 and 988 co-present but NOT linked       : {rate('pair_loose_at_close')}"
           f"   <- review by hand, not counted either way")
