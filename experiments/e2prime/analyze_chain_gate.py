@@ -88,6 +88,12 @@ TRUTH = SPEC["ground_truth_answer"]               # 2353
 # characters, so a neighbouring table row ("19→808, 23→988") cannot cross-match.
 _PAIR = re.compile(rf"(?<!\d){QCODE}\D{{1,8}}{TVAL}(?!\d)")
 _PAIR_REV = re.compile(rf"(?<!\d){TVAL}\D{{1,12}}{QCODE}(?!\d)")
+# The student's dominant move on the table is LOSSY SUMMARY: it names the table and reports its
+# entry count and value RANGE ("24 surcharge rates (10-988 cents)") without any mapping. 988 is
+# then present as a range endpoint while 23->988 is not recorded. That is Tier 1 in the
+# RELEVANCE-CONTROL-V2 taxonomy (existence-or-purpose noted) against Tier 2 (mappings recorded) —
+# a different thing from ignoring the table, and the distinction is what training has to move.
+_TABLE_NAMED = re.compile(r"REGION[_ ]SURCHARGE|region_tables", re.I)
 
 
 def _int_present(text: str, value: int) -> bool:
@@ -99,9 +105,12 @@ def rescore(state_text: str) -> dict:
     arbiter, and `pair_loose` exists so a co-present-but-unlinked state is reviewed, not counted."""
     flat = re.sub(r"\s+", " ", state_text or "")
     pair = bool(_PAIR.search(flat))
+    named = bool(_TABLE_NAMED.search(flat))
     return {
-        "queried_mapping": pair,
+        "queried_mapping": pair,                       # Tier 2: the mapping itself
         "queried_mapping_reversed": bool(_PAIR_REV.search(flat)),
+        "table_named": named,                          # Tier 1: the table exists / what it is for
+        "tier1_summary_only": named and not pair,      # named, catalogued, mappings dropped
         "pair_loose": (not pair) and _int_present(flat, QCODE) and _int_present(flat, TVAL),
         "table_value_present": _int_present(flat, TVAL),
         "adder_value_present": _int_present(flat, ADDER),
@@ -122,6 +131,8 @@ def components(rec: dict) -> dict:
         "RECORD_tablevalue_ever": ever_val,
         "RECORD_adder_ever": ever_add,
         "RECORD_both_ever": ever_map and ever_add,
+        "TIER1_table_named_ever": any(f["table_named"] for f in per_pass),
+        "TIER1_summary_only_at_close": fin["tier1_summary_only"],
         "RETAIN_mapping_at_close": fin["queried_mapping"],
         "RETAIN_adder_at_close": fin["adder_value_present"],
         "RETAIN_both_at_close": fin["queried_mapping"] and fin["adder_value_present"],
@@ -199,6 +210,9 @@ def arm_report(arm: str, recs: list[dict]) -> dict:
     print(f"    RECORD  mapping 23->988 hosted at any pass : {rate('RECORD_mapping_ever')}")
     print(f"    RECORD  adder 1365 hosted at any pass      : {rate('RECORD_adder_ever')}")
     print(f"    RECORD  both operands hosted at any pass   : {rate('RECORD_both_ever')}")
+    print(f"    TIER-1  table NAMED at any pass            : {rate('TIER1_table_named_ever')}")
+    print(f"    TIER-1  named but mappings dropped, close  : {rate('TIER1_summary_only_at_close')}"
+          f"   <- lossy summary, not indifference")
     print(f"    RETAIN  both operands present at close     : {rate('RETAIN_both_at_close')}")
     print(f"    (lost after recording, retention failure)  : {rate('LOST_after_recording')}")
     n_interp = sum(r["compose_interpretable"] for r in rows)
