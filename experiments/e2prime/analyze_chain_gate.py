@@ -71,13 +71,50 @@ def classify_close(rec: dict) -> str:
     return "no_answer_line__other"
 
 
+QCODE = SPEC["queried_code"]                      # 23
+TVAL = SPEC["table_value_for_queried"]            # 988
+ADDER = SPEC["reconciliation_adder_cents"]        # 1365
+TRUTH = SPEC["ground_truth_answer"]               # 2353
+
+# The runner's stored flags matched the queried mapping as "23: 988" — a COLON only. The trained
+# student paraphrases the table as "23→988" (U+2192), and also emits "->", "=" and en/em dashes.
+# Scoring that as not-recorded is the exact-match trap pca/planted.py warns about in its own
+# docstring, and here it would have manufactured a false ARCHITECTURE GATE — the most consequential
+# error available, since <=1/10 ends training spend on this instantiation. Every flag below is
+# therefore RECOMPUTED from the archived state text; the stored flags are ignored.
+# Adjacency, not co-presence: key and value must be separated by at most a few NON-DIGIT
+# characters, so a neighbouring table row ("19→808, 23→988") cannot cross-match.
+_PAIR = re.compile(rf"(?<!\d){QCODE}\D{{1,8}}{TVAL}(?!\d)")
+_PAIR_REV = re.compile(rf"(?<!\d){TVAL}\D{{1,12}}{QCODE}(?!\d)")
+
+
+def _int_present(text: str, value: int) -> bool:
+    return re.search(rf"(?<!\d){value}(?!\d)", text) is not None
+
+
+def rescore(state_text: str) -> dict:
+    """Paraphrase-robust re-read of a rendered state. Still a PRE-FILTER: hand verification is the
+    arbiter, and `pair_loose` exists so a co-present-but-unlinked state is reviewed, not counted."""
+    flat = re.sub(r"\s+", " ", state_text or "")
+    pair = bool(_PAIR.search(flat))
+    return {
+        "queried_mapping": pair,
+        "queried_mapping_reversed": bool(_PAIR_REV.search(flat)),
+        "pair_loose": (not pair) and _int_present(flat, QCODE) and _int_present(flat, TVAL),
+        "table_value_present": _int_present(flat, TVAL),
+        "adder_value_present": _int_present(flat, ADDER),
+        "precomposed_answer": _int_present(flat, TRUTH),
+    }
+
+
 def components(rec: dict) -> dict:
     """§5 joints. RECORD is warm: did the state EVER host it, per-pass, not just at close."""
     passes = rec["passes"]
-    ever_map = any(p["flags"]["queried_mapping"] for p in passes)
-    ever_val = any(p["flags"]["table_value_present"] for p in passes)
-    ever_add = any(p["flags"]["adder_value_present"] for p in passes)
-    fin = rec["final_flags"]
+    per_pass = [rescore(p["state_text"]) for p in passes]
+    ever_map = any(f["queried_mapping"] for f in per_pass)
+    ever_val = any(f["table_value_present"] for f in per_pass)
+    ever_add = any(f["adder_value_present"] for f in per_pass)
+    fin = rescore(rec["final_state"])
     return {
         "RECORD_mapping_ever": ever_map,
         "RECORD_tablevalue_ever": ever_val,
@@ -87,9 +124,19 @@ def components(rec: dict) -> dict:
         "RETAIN_adder_at_close": fin["adder_value_present"],
         "RETAIN_both_at_close": fin["queried_mapping"] and fin["adder_value_present"],
         "LOST_after_recording": (ever_map and not fin["queried_mapping"]),
-        "COMPOSE_returns_2353": rec["scoring"]["c3_close_returns_2353"],
-        "candidate_success": rec["scoring"]["candidate_success"],
+        "COMPOSE_returns_2353": rec["closing"]["answer"] == TRUTH,
         "precomposed_in_state": fin["precomposed_answer"],
+        "pair_loose_at_close": fin["pair_loose"],
+        "record_first_pass": next((p["k"] for p, f in zip(passes, per_pass)
+                                   if f["queried_mapping"]), None),
+        # The addendum's four conditions, recomputed on the corrected matcher.
+        "candidate_success": bool(
+            fin["queried_mapping"] and fin["adder_value_present"]
+            and not fin["precomposed_answer"]
+            and rec["closing"]["answer"] == TRUTH
+            and _int_present(rec["closing"]["raw_output"] or "", TVAL)
+            and _int_present(rec["closing"]["raw_output"] or "", ADDER)),
+        "stored_flag_disagrees": (ever_map != any(p["flags"]["queried_mapping"] for p in passes)),
     }
 
 
@@ -126,7 +173,7 @@ def arm_report(arm: str, recs: list[dict]) -> dict:
         print(f"{r['_meta']['seed']:>5} {str(r['closing']['answer']):>7} {why:>34} "
               f"{str(comp['RECORD_both_ever'])[0]:>5} {str(comp['RETAIN_both_at_close'])[0]:>5} "
               f"{str(comp['COMPOSE_returns_2353'])[0]:>5} {str(comp['candidate_success'])[0]:>5} "
-              f"{str(r['record_first_pass']):>6} {vt / max(ct, 1):>6.3f} "
+              f"{str(comp['record_first_pass']):>6} {vt / max(ct, 1):>6.3f} "
               f"{r['final_state_tokens']:>6} {str(r['truncated'])[0]:>5}{tag}")
         if not tag:
             rows.append(comp)
@@ -144,6 +191,13 @@ def arm_report(arm: str, recs: list[dict]) -> dict:
     print(f"    (lost after recording, retention failure)  : {rate('LOST_after_recording')}")
     print(f"    COMPOSE close returns 2353                 : {rate('COMPOSE_returns_2353')}")
     print(f"    state already held 2353 before close       : {rate('precomposed_in_state')}")
+    print(f"    23 and 988 co-present but NOT linked       : {rate('pair_loose_at_close')}"
+          f"   <- review by hand, not counted either way")
+    n_dis = sum(r["stored_flag_disagrees"] for r in rows)
+    if n_dis:
+        print(f"    !! runner's stored flag disagrees on       : {n_dis}/{n} draw(s) — the runner's "
+              f"colon-only matcher missed the paraphrased mapping; these numbers are the "
+              f"recomputed ones")
     print(f"    MECHANICAL candidate successes             : {rate('candidate_success')}"
           f"   <- hand-verify each before any verdict")
 
