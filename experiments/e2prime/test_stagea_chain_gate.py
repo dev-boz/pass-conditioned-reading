@@ -166,7 +166,7 @@ with tempfile.TemporaryDirectory() as td:
     rec = run_draw(srv, passes, SPEC, cfg, seed=1, temp=0.7, out_path=out,
                    meta={"arm": "fake", "model": "none", "verdict_eligible": False,
                          "addendum_committed": False},
-                   max_tokens=900, max_passes=3)
+                   max_tokens=900, closing_max_tokens=1200, max_passes=3)
     check("record written", out.exists(), True)
     on_disk = json.loads(out.read_text(encoding="utf-8"))
     check("record round-trips through JSON", on_disk["complete"], True)
@@ -178,6 +178,8 @@ check("queried mapping survived the clobber attempt",
       rec["final_flags"]["queried_mapping"], True)
 check("RECORD first seen on pass 2", rec["record_first_pass"], 2)
 check("closing answer parsed", rec["closing"]["answer"], 2353)
+check("closing answer line present", rec["closing"]["answer_line_missing"], False)
+check("closing budget not flagged exhausted", rec["closing"]["closing_budget_exhausted"], False)
 check("candidate flagged for hand verification",
       rec["scoring"]["candidate_success"], True)
 check("per-pass archive keeps the prompts", bool(rec["passes"][0]["system"]

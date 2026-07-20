@@ -288,12 +288,14 @@ def closing_flags(text: str, answer: int | None, spec: dict, final: dict) -> dic
 
 # --------------------------------------------------------------------------- the draw
 def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp: float,
-             out_path: Path, meta: dict, max_tokens: int, max_passes: int | None) -> dict:
+             out_path: Path, meta: dict, max_tokens: int, closing_max_tokens: int,
+             max_passes: int | None) -> dict:
     fracs = tuple(cfg["schedule"]["code"]["stage_fracs"])
     op_cap = cfg["harness"]["op_cap"]
     todo = passes[:max_passes] if max_passes else passes
     st = IntegrationState(guard=cfg["harness"]["guard"])       # strict — as trained
     rec = {"_meta": {**meta, "seed": seed, "temp": temp, "max_tokens": max_tokens,
+                     "closing_max_tokens": closing_max_tokens,
                      "op_cap": op_cap, "guard": cfg["harness"]["guard"],
                      "n_passes_planned": len(todo)},
            "passes": [], "complete": False}
@@ -344,7 +346,7 @@ def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp:
     close_user = (f"FINAL STATE:\n{final_state}\n\nQuestion: {spec['scoring_question']}\n"
                   "Reason briefly from the state, then end with: ANSWER: <integer>")
     try:
-        cresp = server.chat(CLOSE_SYSTEM, close_user, max_tokens=max_tokens,
+        cresp = server.chat(CLOSE_SYSTEM, close_user, max_tokens=closing_max_tokens,
                             temperature=temp, seed=seed)
         ctext, chttp = cresp["text"], None
     except requests.exceptions.HTTPError as e:
@@ -353,6 +355,10 @@ def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp:
         print(f"  !! closing HTTP {chttp} (state too large for context)", flush=True)
     m = re.search(r"ANSWER:\s*(-?\d[\d,]*)", ctext)
     answer = int(m.group(1).replace(",", "")) if m else None
+    # No ANSWER line at all: distinguish "ran out of decode budget mid-reasoning" from a refusal
+    # to answer. Both score as no-answer, but only the first is a measurement artifact, so it is
+    # recorded per draw rather than silently pooled into the failures.
+    answer_line_missing = m is None and "INSUFFICIENT" not in ctext
 
     rec["final_state"] = final_state
     rec["final_state_tokens"] = n_tokens(final_state)
@@ -360,7 +366,11 @@ def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp:
     rec["record_first_pass"] = first_record_pass
     rec["record_first_phase"] = first_record_phase
     rec["closing"] = {"system": CLOSE_SYSTEM, "user": close_user, "raw_output": ctext,
-                      "answer": answer, "http_error": chttp}
+                      "answer": answer, "http_error": chttp,
+                      "answer_line_missing": answer_line_missing,
+                      "closing_tokens": n_tokens(ctext),
+                      "closing_budget_exhausted": answer_line_missing
+                      and n_tokens(ctext) >= closing_max_tokens - 32}
     rec["scoring"] = closing_flags(ctext, answer, spec, final)
     rec["truncated"] = truncated
     rec["truncated_at_pass"] = trunc_at
@@ -434,7 +444,12 @@ def main() -> None:
     ap.add_argument("--ngl", type=int, default=99)
     ap.add_argument("--threads", type=int, default=24)
     ap.add_argument("--port", type=int, default=8097)
-    ap.add_argument("--max-tokens", type=int, default=900)
+    # Both budgets are the TRAINING-TIME budgets: pca.teacher_gen generates recording passes at
+    # max_tokens=900 and the closing turn at 1200. The smoke draw showed a 900-token closing
+    # truncating mid-reasoning before its ANSWER line — an artifact that biases against the arm
+    # under test, so the closing budget matches training rather than the recording pass.
+    ap.add_argument("--max-tokens", type=int, default=900, help="recording passes (as trained)")
+    ap.add_argument("--closing-max-tokens", type=int, default=1200, help="closing turn (as trained)")
     ap.add_argument("--max-passes", type=int, default=None,
                     help="SMOKE ONLY: truncate the schedule. Stamps verdict_eligible=false and "
                          "writes to smoke_* files that --summarize ignores.")
@@ -517,7 +532,9 @@ def main() -> None:
             "addendum_commit_gate": gate,
             "protocol": {"guard": cfg["harness"]["guard"], "op_cap": cfg["harness"]["op_cap"],
                          "state_budget_tok": cfg["harness"]["state_budget_tok"],
-                         "max_tokens": args.max_tokens, "max_passes": args.max_passes,
+                         "max_tokens": args.max_tokens,
+                         "closing_max_tokens": args.closing_max_tokens,
+                         "max_passes": args.max_passes,
                          "sampled_draws": SAMPLED_DRAWS, "anchor": list(ANCHOR_DRAW),
                          "denominator": "the 10 sampled draws; the anchor is never pooled"},
             "need_class": ADDENDUM_NEED_CLASS,
@@ -567,7 +584,7 @@ def main() -> None:
                 run_draw(server, passes, spec, cfg, seed, temp, out_path,
                          {"arm": arm, "model": str(model), "verdict_eligible": verdict_eligible,
                           "addendum_committed": gate["committed"]},
-                         args.max_tokens, args.max_passes)
+                         args.max_tokens, args.closing_max_tokens, args.max_passes)
         finally:
             server.stop()
             time.sleep(3)   # one model at a time: let the VRAM free before the next arm
