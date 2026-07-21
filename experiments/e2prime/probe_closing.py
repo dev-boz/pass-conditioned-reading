@@ -80,8 +80,17 @@ def build(variant: str, rec: dict) -> tuple[str, str, int]:
         system = RETRIEVE_SYSTEM
     elif variant == "budget":
         budget = 4096
-    user = (f"FINAL STATE:\n{state}\n\nQuestion: {SPEC['scoring_question']}\n"
-            "Reason briefly from the state, then end with: ANSWER: <integer>")
+    if variant == "queryfirst":
+        # PREFILL ORDER, not oracle: the scoring question is legitimately available at close time;
+        # this only moves it BEFORE the state so the model reads the ~7.7K-token brief already
+        # knowing what it is looking for (query-conditioned retrieval). It is a train/eval mismatch
+        # — the student was trained with the question AFTER the state — so it is a design probe, not
+        # a verdict arm. Tests the maintainer's prefill-order hypothesis on the composition step.
+        user = (f"Question: {SPEC['scoring_question']}\n\nFINAL STATE:\n{state}\n\n"
+                "Using ONLY the state above, reason briefly, then end with: ANSWER: <integer>")
+    else:
+        user = (f"FINAL STATE:\n{state}\n\nQuestion: {SPEC['scoring_question']}\n"
+                "Reason briefly from the state, then end with: ANSWER: <integer>")
     return system, user, budget
 
 
