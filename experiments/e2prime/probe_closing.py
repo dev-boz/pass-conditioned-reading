@@ -61,6 +61,28 @@ def distill(state: str) -> str:
     return "\n".join(keep)
 
 
+def padded(state: str) -> str:
+    """ORACLE FILTER, length-preserving: keep operand-bearing lines verbatim AT THEIR ORIGINAL
+    POSITIONS; replace every other line with digit-free neutral filler of roughly matched length.
+    Same length and position profile as the real state, distractor CONTENT removed. Separates
+    small-model long-context degradation (still fails here) from distractor capture (composes
+    here) — the two are conflated by `distilled`, which removes both at once. On draws holding
+    no operands the state becomes all filler: a free negative control (any 2353 there would flag
+    leakage in the probe itself)."""
+    out = []
+    for ln in state.splitlines():
+        if re.search(rf"(?<!\d){TVAL}(?!\d)", ln) or re.search(rf"(?<!\d){ADDER}(?!\d)", ln):
+            out.append(ln)
+            continue
+        sid = ln.split(":", 1)[0] if ":" in ln else "S?"
+        fill = (f"{sid}: routine module entry; helper functions only, no configuration or "
+                f"numeric values recorded in this entry.")
+        while len(fill) < len(ln):
+            fill += " No further detail recorded for this module."
+        out.append(fill)
+    return "\n".join(out)
+
+
 def modules(state: str) -> str:
     """ORACLE-LITE: keep entries naming the two modules the chain runs through. Still forcing —
     it names where to look — but it does not hand over the values themselves."""
@@ -74,6 +96,8 @@ def build(variant: str, rec: dict) -> tuple[str, str, int]:
     system, budget = CLOSE_SYSTEM, 1200
     if variant == "distilled":
         state = distill(state)
+    elif variant == "padded":
+        state = padded(state)
     elif variant == "modules":
         state = modules(state)
     elif variant == "retrieve":
@@ -107,7 +131,7 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8100)
     args = ap.parse_args()
 
-    all_variants = ["asis", "distilled", "modules", "retrieve", "budget"]
+    all_variants = ["asis", "distilled", "padded", "modules", "retrieve", "budget"]
     variants = all_variants if args.variant == "all" else args.variant.split(",")
     rec_dir, out_dir = ROOT / args.records, ROOT / args.out
     out_dir.mkdir(parents=True, exist_ok=True)
