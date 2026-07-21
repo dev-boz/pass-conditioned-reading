@@ -1,0 +1,82 @@
+
+====================================================================================================
+ARM: floor   sampled n=10/10   anchor=present
+====================================================================================================
+ seed     ans                                why   REC   RET   CMP  cand  recAt  valid  stTok trunc
+    1     522                           answered     F     F     F     F   None  0.750      6     F
+    2    None              declared_insufficient     F     F     F     F   None  0.804    875     F
+    3    None              declared_insufficient     F     F     F     F   None  0.985    830     F
+    4     523                           answered     F     F     F     F   None  0.148     21     F
+    5    None              declared_insufficient     F     F     F     F   None  1.000   1271     F
+    6    None              declared_insufficient     F     F     F     F   None  0.026     23     F
+    7      53                           answered     F     F     F     F   None  1.000    903     F
+    8      56                           answered     F     F     F     F   None  0.992    836     F
+    9      23                           answered     F     F     F     F   None  1.000    645     F
+   10      54                           answered     F     F     F     F   None  1.000   1841     F
+   42      23                           answered     F     F     F     F   None  0.996   1400     F  <- ANCHOR, never pooled
+
+  §5 COMPONENT ATTRIBUTION (sampled denominator n=10; anchor excluded)
+    RECORD  mapping 23->988 hosted at any pass : 0/10
+    RECORD  adder 1365 hosted at any pass      : 0/10
+    RECORD  both operands hosted at any pass   : 0/10
+    TIER-1  table NAMED at any pass            : 2/10
+    TIER-1  named but mappings dropped, close  : 2/10   <- lossy summary, not indifference
+    RETAIN  both operands present at close     : 0/10
+    (lost after recording, retention failure)  : 0/10
+    COMPOSE close returns 2353                 : 0/10
+      of draws that reached close WITH both    : 0/0   <- the only draws where COMPOSE is interpretable
+      wrong number in prose, no ANSWER line    : 0/10   <- reasoning failure, not formatting
+    state already held 2353 before close       : 0/10
+    23 and 988 co-present but NOT linked       : 0/10   <- review by hand, not counted either way
+    MECHANICAL candidate successes             : 0/10   <- hand-verify each before any verdict
+
+  op-following: 7.7 ops/pass emitted, 2.4 applied/pass; final state 74 entries / 725 tok on average
+
+  closing outcomes: {'answered': 6, 'declared_insufficient': 4}
+  guard events over the sampled ten: none
+
+====================================================================================================
+ARM: student   sampled n=10/10   anchor=present
+====================================================================================================
+ seed     ans                                why   REC   RET   CMP  cand  recAt  valid  stTok trunc
+    1    None        no_answer_line__near_budget     F     F     F     F   None  0.942   7579     F
+    2      86                           answered     T     T     F     F     12  0.979   7692     F
+    3    None        no_answer_line__near_budget     F     F     F     F      2  0.993   7253     F
+    4    None      no_answer_line__stopped_early     F     F     F     F   None  0.987   8545     F
+    5    None      no_answer_line__stopped_early     T     T     F     F     12  0.996   7967     F
+    6       0                           answered     F     F     F     F   None  0.952   6473     F
+    7    1365                           answered     F     F     F     F   None  0.985   7373     F
+    8    None      no_answer_line__stopped_early     F     F     F     F   None  0.987   7432     F
+    9    None      no_answer_line__stopped_early     F     F     F     F   None  0.985   8305     F
+   10      98                           answered     F     F     F     F   None  0.962   8239     F
+   42      16                           answered     F     F     F     F   None  0.888   7108     F  <- ANCHOR, never pooled
+
+  §5 COMPONENT ATTRIBUTION (sampled denominator n=10; anchor excluded)
+    RECORD  mapping 23->988 hosted at any pass : 3/10
+    RECORD  adder 1365 hosted at any pass      : 7/10
+    RECORD  both operands hosted at any pass   : 2/10
+    TIER-1  table NAMED at any pass            : 7/10
+    TIER-1  named but mappings dropped, close  : 4/10   <- lossy summary, not indifference
+    RETAIN  both operands present at close     : 2/10
+    (lost after recording, retention failure)  : 0/10
+    COMPOSE close returns 2353                 : 0/10
+      of draws that reached close WITH both    : 0/2   <- the only draws where COMPOSE is interpretable
+      wrong number in prose, no ANSWER line    : 2/10   <- reasoning failure, not formatting
+    state already held 2353 before close       : 0/10
+    23 and 988 co-present but NOT linked       : 3/10   <- review by hand, not counted either way
+    !! runner's stored flag disagrees on       : 2/10 draw(s) — the runner's colon-only matcher missed the paraphrased mapping; these numbers are the recomputed ones
+    MECHANICAL candidate successes             : 0/10   <- hand-verify each before any verdict
+
+  op-following: 7.5 ops/pass emitted, 7.0 applied/pass; final state 116 entries / 7686 tok on average
+
+  closing outcomes: {'no_answer_line__near_budget': 2, 'answered': 4, 'no_answer_line__stopped_early': 4}
+  guard events over the sampled ten: {'redirected:redirected_quote': 93, 'blocked:blocked_quote_mismatch': 144, 'blocked:blocked_strict_repurpose': 7, 'blocked:blocked_guard': 2}
+
+====================================================================================================
+CRITERION §3 — applied to MECHANICAL candidates
+====================================================================================================
+  student 0/10   floor 0/10
+  floor 0/10 is within the expected 0-1 band, so the absolute thresholds hold.
+  -> ARCHITECTURE GATE (<=1/10) -> no further training spend on this instantiation; the pre-named third option is the native architecture (docs/DISCO-NATIVE-ARCHITECTURE.md)
+
+  This reading is MECHANICAL. Every candidate success must be hand-verified per the addendum before the verdict is recorded, and a candidate that fails hand verification lowers the student count.
