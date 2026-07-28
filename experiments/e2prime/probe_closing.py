@@ -22,15 +22,31 @@ Variants (all replay ONLY the closing turn against archived final states):
   asis        the battery's own closing, re-asked — the control
   distilled   ORACLE: only state entries containing either operand survive
   modules     ORACLE-LITE: entries naming the pricing/fulfillment modules survive
+  padded      ORACLE, length-preserving: operand lines kept in place, all else neutral filler
   retrieve    unfiltered state, but told to locate and quote relevant entries before computing
   budget      unfiltered state, much larger decode budget (see also closing_budget_diag.py)
+  queryfirst  PREFILL ORDER: question moved before the state
+  sweepNN     ORACLE (operands kept), REAL content: delete NN% of non-operand entries —
+              varies state SIZE where `padded` varied content at fixed size
+  traindemand NOT oracle: the LITERAL training-time close (bare CLOSING_SYSTEM + the teacher's
+              `closing_demand` brief request, no question, no ANSWER: scaffold)
+  exactask    NOT oracle: the question asked in the trained register with an explicit exact-value
+              demand, but WITHOUT the ANSWER: <integer> scaffold
 
   python experiments/e2prime/probe_closing.py --arm student --variant all
+
+`traindemand` / `exactask` exist because of a train/eval register gap found on 2026-07-25: the
+string "ANSWER:" occurs ZERO times in all 5,730 training rows, and every one of the 277 closing
+rows demanded an analytical brief, never a question-answer. The eval close did ask for an exact
+integer — the defect is that training never did. These two variants are the only ones here that
+use NO oracle knowledge (they change the prompt, never the state), so unlike distilled/padded
+they are not forcing; they are still non-verdict, because the battery is frozen.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 import sys
 from datetime import datetime, timezone
@@ -41,8 +57,19 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(HERE))
 
+import yaml                                                       # noqa: E402
+
 from pca.llm import LlamaServer                                   # noqa: E402
+from pca.teacher_gen import CLOSING_SYSTEM                        # noqa: E402
 from stagea_chain_gate import ARMS, CLOSE_SYSTEM, P7              # noqa: E402
+# Reuse the AUDITED paraphrase-robust matcher rather than writing a second one that could disagree
+# with the analysis (the 4x mid-run scorer corrections are why this is a hard rule here).
+from analyze_chain_gate import rescore                            # noqa: E402
+
+# The literal trained close, byte-identical to what the teacher was asked for: read from the frozen
+# teacher config so it cannot drift from the training data.
+_TCFG = yaml.safe_load((HERE / "teacher_config.yaml").read_text(encoding="utf-8"))
+TRAIN_CLOSING_DEMAND = _TCFG["task"]["closing_demand"].strip()
 
 SPEC = json.loads((P7 / "fixture" / "fixture_spec.json").read_text(encoding="utf-8"))
 TRUTH, TVAL, ADDER = (SPEC["ground_truth_answer"], SPEC["table_value_for_queried"],
@@ -91,11 +118,69 @@ def modules(state: str) -> str:
     return "\n".join(ln for ln in state.splitlines() if any(p.lower() in ln.lower() for p in pats))
 
 
-def build(variant: str, rec: dict) -> tuple[str, str, int]:
+def sweep(state: str, drop_frac: float, seed: int) -> str:
+    """ORACLE (operand lines preserved by construction), but REAL content elsewhere: delete
+    `drop_frac` of the non-operand entries and keep the rest verbatim, in order.
+
+    Why this is not `padded`: padded replaced every non-operand line with digit-free filler at the
+    SAME length, so it removed distractor CONTENT while holding length fixed. That isolates content,
+    not size. This variant holds content real and varies SIZE, which is the axis the padded probe
+    could not price. Running both gives a 2-D reading: padded says content misdirects retrieval,
+    sweep says how much state the 1.5B can carry before two-operand compose stops firing.
+    Deterministic in `seed` so a rerun is byte-identical.
+    """
+    lines = state.splitlines()
+    keep_idx, drop_pool = [], []
+    for i, ln in enumerate(lines):
+        if (re.search(rf"(?<!\d){TVAL}(?!\d)", ln) or re.search(rf"(?<!\d){ADDER}(?!\d)", ln)):
+            keep_idx.append(i)
+        else:
+            drop_pool.append(i)
+    rng = random.Random(seed)
+    rng.shuffle(drop_pool)
+    n_drop = int(round(len(drop_pool) * drop_frac))
+    dropped = set(drop_pool[:n_drop])
+    return "\n".join(ln for i, ln in enumerate(lines) if i not in dropped)
+
+
+def score_prose(text: str) -> dict:
+    """SECONDARY metric, pre-committed as an instrument debt in STAGEA-EXPLORATION-LEDGER.md: 6/10
+    battery closings emitted no `ANSWER:` line, so an ANSWER-only scorer cannot tell a reasoning
+    failure from a format failure. The `traindemand` variant CANNOT emit an ANSWER line by
+    construction (it is never asked for one), so a prose reading is the only way to score it at all.
+
+    Reported, never collapsed into `correct`: the ANSWER-line metric stays the primary so these
+    numbers remain commensurable with the archived probe results.
+    """
+    # Normalise "2,353" -> "2353" first, then extract integers. The lookarounds must reject the
+    # parts of a decimal ("3.14") WITHOUT rejecting a sentence-final integer ("...is 2353.") —
+    # getting that backwards silently drops exactly the answers this metric exists to catch.
+    flat = re.sub(r"(?<=\d),(?=\d\d\d(?!\d))", "", text or "")
+    ints = [int(x) for x in re.findall(r"(?<!\d)(?<!\d\.)(\d{1,7})(?!\d)(?!\.\d)", flat)]
+    surfaced = rescore(text)
+    return {
+        "prose_truth_present": TRUTH in ints,
+        "prose_last_int": ints[-1] if ints else None,
+        "prose_last_int_is_truth": bool(ints) and ints[-1] == TRUTH,
+        # did the OUTPUT carry the operands through, whether or not it composed them?
+        "prose_mapping_linked": surfaced["queried_mapping"],
+        "prose_adder_present": surfaced["adder_value_present"],
+        "prose_both_operands": surfaced["queried_mapping"] and surfaced["adder_value_present"],
+    }
+
+
+EXACTASK_SYSTEM = (
+    CLOSING_SYSTEM + " Answer using only values present in the state; you MAY compute a value the "
+    "state's own formulas imply. Give the exact integer value, not a range or an approximation.")
+
+
+def build(variant: str, rec: dict) -> tuple[str, str, int, str]:
     state = rec["final_state"]
     system, budget = CLOSE_SYSTEM, 1200
     if variant == "distilled":
         state = distill(state)
+    elif variant.startswith("sweep"):
+        state = sweep(state, int(variant[5:]) / 100.0, rec["_meta"]["seed"])
     elif variant == "padded":
         state = padded(state)
     elif variant == "modules":
@@ -104,7 +189,31 @@ def build(variant: str, rec: dict) -> tuple[str, str, int]:
         system = RETRIEVE_SYSTEM
     elif variant == "budget":
         budget = 4096
-    if variant == "queryfirst":
+    elif variant == "exactask":
+        system = EXACTASK_SYSTEM
+        # 2/11 draws capped at 1200 on the first run (2026-07-25); 4096 matches the `budget`
+        # variant and closing_budget_diag.py so a zero here can't be a decode artifact.
+        budget = 4096
+    elif variant == "traindemand":
+        # the BARE trained system prompt — none of the eval close's added scaffolding
+        system = CLOSING_SYSTEM
+        # MANDATORY here, not optional: the first run capped 11/11 draws at 1200 tokens partway
+        # through enumerating groups, before the brief ever reached the pricing entries. A brief
+        # over ~155 entries cannot be scored at 1200. That run is discarded as uninformative.
+        budget = 4096
+    if variant == "traindemand":
+        # The LITERAL trained close: bare CLOSING_SYSTEM + the teacher's own closing_demand, no
+        # question and no ANSWER: scaffold. This cannot produce 2353 unless the model volunteers the
+        # composition, and it is not meant to — it asks whether the trained behaviour surfaces the
+        # EXACT mapping and adder at all under the demand it was actually trained on. Score with
+        # score_prose(); an ANSWER line here would be anomalous, not success.
+        user = f"FINAL STATE:\n{state}\n\nTask: {TRAIN_CLOSING_DEMAND}"
+    elif variant == "exactask":
+        # Trained register, exact-value demand, NO ANSWER: scaffold (0 occurrences in training).
+        # Separates "the ANSWER: format is out of distribution" from "composition is blocked".
+        user = (f"FINAL STATE:\n{state}\n\nQuestion: {SPEC['scoring_question']}\n"
+                "Reason briefly from the state, then state the exact integer value.")
+    elif variant == "queryfirst":
         # PREFILL ORDER, not oracle: the scoring question is legitimately available at close time;
         # this only moves it BEFORE the state so the model reads the ~7.7K-token brief already
         # knowing what it is looking for (query-conditioned retrieval). It is a train/eval mismatch
@@ -115,14 +224,19 @@ def build(variant: str, rec: dict) -> tuple[str, str, int]:
     else:
         user = (f"FINAL STATE:\n{state}\n\nQuestion: {SPEC['scoring_question']}\n"
                 "Reason briefly from the state, then end with: ANSWER: <integer>")
-    return system, user, budget
+    return system, user, budget, state
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", choices=["student", "floor"], default="student")
     ap.add_argument("--variant", default="all",
-                    help="asis|distilled|modules|retrieve|budget|all (comma-separated)")
+                    help="asis|distilled|padded|modules|retrieve|budget|queryfirst|traindemand|"
+                         "exactask|all (comma-separated)")
+    # CROSS-MODEL CLOSE (2026-07-26): replay ANOTHER model's archived states through this model's
+    # closing turn. Isolates in-situ compose (real ~7.7K noisy state) from the clean-state GATE-3.
+    ap.add_argument("--model", default=None, help="PROBE: GGUF path replacing --arm's model")
+    ap.add_argument("--label", default=None, help="output suffix for --model runs")
     ap.add_argument("--records", default="runs/stageA_chain_gate")
     ap.add_argument("--out", default="runs/stageA_chain_gate/_probe")
     ap.add_argument("--ctx", type=int, default=24576)
@@ -131,7 +245,8 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8100)
     args = ap.parse_args()
 
-    all_variants = ["asis", "distilled", "padded", "modules", "retrieve", "budget"]
+    all_variants = ["asis", "distilled", "padded", "modules", "retrieve", "budget",
+                    "traindemand", "exactask", "sweep25", "sweep50", "sweep75"]
     variants = all_variants if args.variant == "all" else args.variant.split(",")
     rec_dir, out_dir = ROOT / args.records, ROOT / args.out
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -147,13 +262,20 @@ def main() -> None:
 
     print(f"PROBE (design input, NOT a gate arm; distilled/modules use ORACLE filtering)")
     print(f"{len(records)} archived {args.arm} draw(s) x {len(variants)} variant(s)\n")
-    server = LlamaServer(str(ROOT / "models" / "llamacpp" / "llama-server.exe"), str(ARMS[args.arm]),
+    _model = (Path(args.model) if Path(args.model).is_absolute() else ROOT / args.model)         if args.model else ARMS[args.arm]
+    if args.model and not args.label:
+        raise SystemExit("--model requires --label")
+    if not _model.exists():
+        raise SystemExit(f"model not found: {_model}")
+    server = LlamaServer(str(ROOT / "models" / "llamacpp" / "llama-server.exe"), str(_model),
                          ctx=args.ctx, port=args.port, threads=args.threads, n_gpu_layers=args.ngl)
     server.ensure_running()
     out = {"_meta": {"probe": True, "verdict_eligible": False, "gate_legal": False,
                      "note": "ORACLE-filtered variants are forcing under E2PRIME-CRITERION §2 and "
                              "exist to locate the blocked joint; never poolable with the battery",
-                     "arm": args.arm, "model": str(ARMS[args.arm]),
+                     "arm": args.arm, "model": str(_model),
+                     "cross_model_close": bool(args.model),
+                     "states_from": args.arm, "closed_by": args.label or args.arm,
                      "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")},
            "results": {}}
     try:
@@ -161,7 +283,7 @@ def main() -> None:
             rows = []
             for rec in records:
                 seed, temp = rec["_meta"]["seed"], rec["_meta"]["temp"]
-                system, user, budget = build(v, rec)
+                system, user, budget, state_used = build(v, rec)
                 r = server.chat(system, user, max_tokens=budget, temperature=temp, seed=seed)
                 txt = r["text"]
                 m = re.search(r"ANSWER:\s*(-?\d[\d,]*)", txt)
@@ -170,31 +292,50 @@ def main() -> None:
                 rows.append({"seed": seed, "temp": temp, "battery_answer": rec["closing"]["answer"],
                              "answer": ans, "correct": ans == TRUTH,
                              "state_lines_in": len(rec["final_state"].splitlines()),
-                             "state_lines_used": len(user.split("FINAL STATE:\n")[1]
-                                                     .split("\n\nQuestion:")[0].splitlines()),
+                             "state_lines_used": len(state_used.splitlines()),
                              "completion_tokens": u.get("completion_tokens"),
-                             "wall_s": r["wall_s"], "text": txt})
+                             "wall_s": r["wall_s"], **score_prose(txt), "text": txt})
                 print(f"  [{v:>9}] seed={seed:>2} lines {rows[-1]['state_lines_in']:>4}->"
                       f"{rows[-1]['state_lines_used']:>3} ANSWER={str(ans):>6} "
                       f"correct={rows[-1]['correct']} ({r['wall_s']}s)", flush=True)
             sampled = [r for r in rows if r["temp"] == 0.7]
             out["results"][v] = {"draws": rows, "sampled_correct": sum(r["correct"] for r in sampled),
-                                 "sampled_n": len(sampled)}
-            print(f"  [{v:>9}] sampled {out['results'][v]['sampled_correct']}/"
-                  f"{out['results'][v]['sampled_n']} correct\n", flush=True)
-            (out_dir / f"probe_{args.arm}.json").write_text(
+                                 "sampled_n": len(sampled),
+                                 # secondary, never pooled into sampled_correct
+                                 "sampled_prose_truth": sum(r["prose_truth_present"] for r in sampled),
+                                 "sampled_prose_both_operands":
+                                     sum(r["prose_both_operands"] for r in sampled)}
+            rr = out["results"][v]
+            print(f"  [{v:>9}] sampled {rr['sampled_correct']}/{rr['sampled_n']} correct "
+                  f"| prose-truth {rr['sampled_prose_truth']}/{rr['sampled_n']} "
+                  f"| operands surfaced {rr['sampled_prose_both_operands']}/{rr['sampled_n']}\n",
+                  flush=True)
+            (out_dir / f"probe_{args.label or args.arm}.json").write_text(
                 json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
     finally:
         server.stop()
 
-    print("summary (sampled draws only):")
+    print("summary (sampled draws only):  ANSWER-line | prose-truth | operands-surfaced")
     for v, r in out["results"].items():
-        print(f"  {v:>9}: {r['sampled_correct']}/{r['sampled_n']}")
+        print(f"  {v:>11}: {r['sampled_correct']}/{r['sampled_n']}"
+              f" | {r['sampled_prose_truth']}/{r['sampled_n']}"
+              f" | {r['sampled_prose_both_operands']}/{r['sampled_n']}")
     print("\nReading: 'asis' reproduces the battery. If 'distilled'/'modules' lift the rate while "
           "'asis' stays flat, the joint is state LEGIBILITY, not composition — the model holds the "
           "operands and cannot find them in its own brief, which is an argument about the state "
           "representation. If nothing lifts, composition itself is blocked. Neither reading may be "
           "carried into the chain verdict.")
+    print("\nReading the register variants (2026-07-25): 'exactask' asks the same question with an "
+          "exact-value demand but WITHOUT the ANSWER: scaffold that appears 0 times in training. If "
+          "its prose-truth rate beats 'asis' ANSWER-correct, part of the battery's zero was a "
+          "train/eval FORMAT gap and the next instantiation must train the close it will be scored "
+          "on. If it does not move, the format gap is real but not load-bearing and composition "
+          "stays the blocked joint. 'traindemand' asks for the brief the teacher was actually asked "
+          "for: read 'operands-surfaced' there, NOT prose-truth — it is never asked to compose, so "
+          "it measures whether the trained close surfaces exact values at all. High operands-"
+          "surfaced with low prose-truth localises the failure to composition; low operands-"
+          "surfaced says the trained closing demand suppresses exact values, which is a DATA fix "
+          "(re-close the 277 archived trajectories under an exact-value demand) and not a scale one.")
 
 
 if __name__ == "__main__":

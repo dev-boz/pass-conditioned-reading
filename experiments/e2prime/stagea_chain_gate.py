@@ -436,6 +436,15 @@ def summarize(out_dir: Path) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", choices=["student", "floor", "both"], default="both")
+    # SCALE-RUNG PROBE ARM (2026-07-26). Runs the frozen harness against a model that is NOT a
+    # pre-registered Stage-A arm, to ask whether the chain fires when COMPOSE is not the binding
+    # constraint (GATE-3: 1.5B student 1/10 vs untrained 7B 10/10 on the identical seeded state).
+    # SAFETY: passing --model FORCES verdict_eligible=False below, so a scale-rung run can never be
+    # mistaken for, or pooled with, the frozen Stage-A verdict. The Stage-A arms are untouched.
+    ap.add_argument("--model", default=None,
+                    help="PROBE ONLY: explicit GGUF path replacing --arm; forces verdict_eligible "
+                         "False. Requires --label.")
+    ap.add_argument("--label", default=None, help="output arm name for --model runs")
     ap.add_argument("--seeds", default=None,
                     help="comma/range subset of the sampled seeds, e.g. '1-3' or '1,4' (default 1-10)")
     ap.add_argument("--no-anchor", action="store_true", help="skip the seed-42 temp-0 anchor")
@@ -502,7 +511,9 @@ def main() -> None:
         return
 
     gate = addendum_commit_gate(args.allow_uncommitted_addendum)
-    verdict_eligible = gate["committed"] and not args.max_passes
+    # A --model run is a probe by construction: it is not a pre-registered arm, so it can never be
+    # verdict-eligible regardless of the addendum commit gate.
+    verdict_eligible = gate["committed"] and not args.max_passes and not args.model
     out_dir.mkdir(parents=True, exist_ok=True)
 
     seeds = [s for s, _ in SAMPLED_DRAWS]
@@ -519,9 +530,17 @@ def main() -> None:
         draws.append(ANCHOR_DRAW)
 
     exe = ROOT / "models" / "llamacpp" / "llama-server.exe"
-    arms = ["student", "floor"] if args.arm == "both" else [args.arm]
+    if args.model:
+        if not args.label:
+            raise SystemExit("--model requires --label")
+        _p = Path(args.model)
+        arms = [args.label]
+        arm_models = {args.label: _p if _p.is_absolute() else ROOT / _p}
+    else:
+        arms = ["student", "floor"] if args.arm == "both" else [args.arm]
+        arm_models = ARMS
     for arm in arms:
-        model = ARMS[arm]
+        model = arm_models[arm]
         if not model.exists():
             raise SystemExit(f"model not found: {model}")
         print(f"\n{'=' * 78}\nARM: {arm}  ({model.relative_to(ROOT) if ROOT in model.parents else model})"
@@ -529,6 +548,9 @@ def main() -> None:
         manifest = {
             "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "arm": arm, "verdict_eligible": verdict_eligible,
+            "scale_rung_probe": bool(args.model),
+            "probe_note": ("NOT a pre-registered Stage-A arm; never poolable with the frozen "
+                           "0/10 verdict" if args.model else None),
             "addendum_commit_gate": gate,
             "protocol": {"guard": cfg["harness"]["guard"], "op_cap": cfg["harness"]["op_cap"],
                          "state_budget_tok": cfg["harness"]["state_budget_tok"],

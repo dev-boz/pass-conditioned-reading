@@ -115,6 +115,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", choices=["student", "floor", "both"], default="both")
     ap.add_argument("--gate", choices=["1", "3", "both"], default="both")
+    # SCALE RUNG (2026-07-25): run the SAME frozen GATE-3 seeded state against a model that is not
+    # a Stage-A arm, to turn "the scale confound is named, not resolved" into a measured curve.
+    # Deliberately an override here rather than a new entry in stagea_chain_gate.ARMS: that dict
+    # belongs to the verdict-bearing runner and must not be perturbed. Non-verdict either way.
+    ap.add_argument("--model", default=None,
+                    help="explicit GGUF path, overriding --arm (scale rungs; requires --label)")
+    ap.add_argument("--label", default=None,
+                    help="output name for --model runs, e.g. qwen7b_q4 -> companion_qwen7b_q4.json")
     ap.add_argument("--max-tokens", type=int, default=1200)
     ap.add_argument("--out", default="runs/stageA_chain_gate/_companion")
     ap.add_argument("--ctx", type=int, default=24576)
@@ -126,12 +134,25 @@ def main() -> None:
     out_dir = ROOT / args.out
     out_dir.mkdir(parents=True, exist_ok=True)
     exe = ROOT / "models" / "llamacpp" / "llama-server.exe"
-    for arm in (["student", "floor"] if args.arm == "both" else [args.arm]):
+    if args.model:
+        if not args.label:
+            raise SystemExit("--model requires --label (names the output file)")
+        model_path = Path(args.model)
+        if not model_path.is_absolute():
+            model_path = ROOT / model_path
+        if not model_path.exists():
+            raise SystemExit(f"no such model: {model_path}")
+        arms = [(args.label, model_path)]
+    else:
+        arms = [(a, ARMS[a]) for a in
+                (["student", "floor"] if args.arm == "both" else [args.arm])]
+    for arm, model in arms:
         print(f"\n{'=' * 78}\nCOMPANION CHECKS — arm: {arm}\n{'=' * 78}", flush=True)
-        server = LlamaServer(str(exe), str(ARMS[arm]), ctx=args.ctx, port=args.port,
+        server = LlamaServer(str(exe), str(model), ctx=args.ctx, port=args.port,
                              threads=args.threads, n_gpu_layers=args.ngl)
         server.ensure_running()
-        res = {"_meta": {"arm": arm, "model": str(ARMS[arm]), "diagnostic": True,
+        res = {"_meta": {"arm": arm, "model": str(model), "diagnostic": True,
+                         "scale_rung": bool(args.model), "ctx": args.ctx,
                          "verdict_eligible": False,
                          "note": "E2PRIME-PREREG §6 companion checks — reported separately from "
                                  "the chain verdict; cannot soften a chain-gate outcome",
