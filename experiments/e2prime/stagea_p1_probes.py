@@ -53,7 +53,7 @@ sys.path.insert(0, str(HERE))
 
 from pca.editops import IntegrationState, parse_ops                      # noqa: E402
 from pca.llm import LlamaServer                                          # noqa: E402
-from pca.teacher_gen import _system_prompt, _user_prompt                 # noqa: E402
+from pca.teacher_gen import GRAMMAR, _system_prompt, _user_prompt        # noqa: E402
 from pca.textutils import n_tokens                                      # noqa: E402
 from verify_fixture import load_turns                                    # noqa: E402
 from analyze_chain_gate import rescore                                   # noqa: E402
@@ -62,6 +62,9 @@ from stagea_chain_gate import load_config, preflight, build_passes       # noqa:
 MODELS = {
     "student": ROOT / "runs" / "stageA_coupled_v2" / "stageA_v2-f16.gguf",
     "qwen3b": ROOT / "models" / "Qwen2.5-3B-Instruct-f16.gguf",
+    # Q4 caveat stands (07-26 arbitration §6): quantization is a live suspect for op-format
+    # collapse, so a 7B-Q4 format failure is inconclusive, not evidence.
+    "qwen7b": ROOT / "models" / "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
 }
 SEEDS = list(range(1, 11))
 TEMP = 0.7
@@ -75,6 +78,33 @@ S2_RECORD = ROOT / "runs" / "stageA_chain_gate" / "student_s2_t0.7.json"
 ADD_LICENSE = (" If this view contains material your state has no entry for, ADD a new entry "
                "recording it.")
 
+# P1e (maintainer hypothesis, 2026-07-28): "the training almost just needs to be a prompt telling
+# the model what to do and what not to do — if the model knew the architecture and its position it
+# could almost do it on its own, or at least a larger model should." This system prompt EXPLAINS
+# the architecture and derives the behaviour from position, instead of the terse per-stage rubric.
+# Forcing boundary: names the protocol, never the probe (audited like every other prompt here).
+EXPLAINED_ROLE = (
+    "You are one pass in a K-pass scheduled read of a long document. Early passes see broad, "
+    "heavily compressed views of the whole document; later passes see small regions verbatim. "
+    "You maintain the single persistent integration state; downstream questions about the "
+    "document's specifics will be answered from that state alone, with no access to the source."
+    "\n\nHow to work, by position:"
+    "\n- EARLY passes (k small): your job is structure, not values. Create one entry per "
+    "region/module naming what it defines, so every later pass has an entry to put specifics "
+    "into. It is correct to create entries whose values you have not seen yet."
+    "\n- LATE passes (k large): your job is specifics. Find the entry each fact belongs to and "
+    "REPLACE it with the exact values, names and quotes from the view. If a fact has no "
+    "matching entry, ADD one."
+    "\n\nDo not rewrite entries the view says nothing about. Do not summarize away exact "
+    "values. Never invent values that are not in the view.")
+
+
+def explained_system(cfg: dict) -> str:
+    return (f"{GRAMMAR}\n\n{EXPLAINED_ROLE}\n\n"
+            f"State budget: stay under {cfg['harness']['state_budget_tok']} tokens; "
+            f"consolidate rather than truncate. Output ONLY edit-op lines.")
+
+
 # Placeholder emissions, for P1b/P1d readings. Loose on purpose; hand-reading arbitrates.
 _PLACEHOLDER = re.compile(
     r"\[TBD[^\]]*\]|\bTBD\b|to be (?:determined|filled|resolved)|insert (?:value|here)"
@@ -85,8 +115,8 @@ PROBE_TOKENS = ["REGION_SURCHARGE_CENTS", "RECONCILIATION_ADDER_CENTS",
 
 
 # --------------------------------------------------------------------------- materials
-def harness_materials() -> tuple[dict, dict, dict]:
-    """Frozen cfg + the pass-26 tile, via the same loaders as the gate runner."""
+def harness_materials() -> tuple[dict, dict, dict, dict]:
+    """Frozen cfg + the pass-26 tile + a Phase-A scaffold pass, via the gate runner's loaders."""
     cfg = load_config()
     spec = json.loads((P7 / "fixture" / "fixture_spec.json").read_text(encoding="utf-8"))
     scaffold = json.loads((P7 / "scaffold_struct.json").read_text(encoding="utf-8"))
@@ -98,7 +128,9 @@ def harness_materials() -> tuple[dict, dict, dict]:
     assert "def compute_line_surcharge" in tile26["view_text"], "pass-26 tile lost the fn body"
     assert "1365" in tile26["view_text"], "pass-26 tile lost the adder"
     assert "988" not in tile26["view_text"], "table value leaked into the pass-26 tile"
-    return cfg, spec, tile26
+    pass2 = passes[1]
+    assert pass2["phase"] == "A" and pass2["k"] == 2, (pass2["phase"], pass2["k"])
+    return cfg, spec, tile26, pass2
 
 
 def s2_pass26_state_lines() -> list[str]:
@@ -201,6 +233,13 @@ def run_cell(server, label: str, system: str, user_k: int, state: IntegrationSta
         d = {"seed": seed,
              "emitted": _score_text(resp["text"]),
              "applied": _score_text(post),
+             # Structure metrics for home-building cells (P1e H1): did the pass leave
+             # module-keyed entries later passes could land values in?
+             "post_metrics": {
+                 "n_entries": len(st.entries),
+                 "n_module_entries": sum(1 for e in st.entries if ".py" in e["text"]),
+                 "n_defines_entries": sum(1 for e in st.entries
+                                          if "defines" in e["text"].lower())},
              "n_candidate_lines": res.candidate_lines, "n_valid": res.valid,
              "n_ops_applied": applied, "n_blocked": len(st.last_report["blocked"]),
              "op_types": dict(Counter(o["op"] for o in res.ops)),
@@ -225,25 +264,28 @@ def run_cell(server, label: str, system: str, user_k: int, state: IntegrationSta
 
 
 # --------------------------------------------------------------------------- probes
-def probe_cells(probe: str, cfg: dict, tile26: dict) -> tuple[dict, dict]:
-    """Returns ({cell_label: (system, user_k, state_builder)}, meta_extras)."""
+def probe_cells(probe: str, cfg: dict, tile26: dict, pass2: dict) -> tuple[dict, dict]:
+    """Returns ({cell_label: (system, user_k, state_builder, view_text)}, meta_extras)."""
     sys_current = _system_prompt(cfg, "verbatim")
     anchor = "NO_CHANGE if this view adds nothing your state needs."
     assert anchor in sys_current, "verbatim rubric drifted; ADD-license splice has no anchor"
     sys_addlic = sys_current.replace(anchor, anchor + ADD_LICENSE)
-    for sysp in (sys_current, sys_addlic):
+    sys_explained = explained_system(cfg)
+    sys_scaffold = _system_prompt(cfg, "scaffold")
+    for sysp in (sys_current, sys_addlic, sys_explained, sys_scaffold):
         leaks = [t for t in PROBE_TOKENS if t.lower() in sysp.lower()]
         assert not leaks, f"forcing-boundary violation in probe system prompt: {leaks}"
 
+    tile = tile26["view_text"]
     s25 = s2_pass26_state_lines()[:25]
     if probe == "p1a":
         pad = padding_lines(n_tokens("\n".join(s25)))
         cells = {
-            "empty_current": (sys_current, 26, lambda: IntegrationState(guard="strict")),
-            "empty_addlicense": (sys_addlic, 26, lambda: IntegrationState(guard="strict")),
-            "s25_current": (sys_current, 26, lambda: state_from_lines(s25)),
-            "s25_addlicense": (sys_addlic, 26, lambda: state_from_lines(s25)),
-            "pad25_current": (sys_current, 26, lambda: state_from_lines(pad)),
+            "empty_current": (sys_current, 26, lambda: IntegrationState(guard="strict"), tile),
+            "empty_addlicense": (sys_addlic, 26, lambda: IntegrationState(guard="strict"), tile),
+            "s25_current": (sys_current, 26, lambda: state_from_lines(s25), tile),
+            "s25_addlicense": (sys_addlic, 26, lambda: state_from_lines(s25), tile),
+            "pad25_current": (sys_current, 26, lambda: state_from_lines(pad), tile),
         }
         meta = {"oracle": False,
                 "question": "is the suppression step a training artifact, a rubric effect, "
@@ -260,9 +302,9 @@ def probe_cells(probe: str, cfg: dict, tile26: dict) -> tuple[dict, dict]:
     elif probe == "p1b":
         pad8 = padding_lines(n_tokens("\n".join(SLOT_LINES)), n_entries=8)
         cells = {
-            "slots_current": (sys_current, 26, lambda: state_from_lines(SLOT_LINES)),
-            "ctrl8_noslot": (sys_current, 26, lambda: state_from_lines(CTRL8_LINES)),
-            "pad8_current": (sys_current, 26, lambda: state_from_lines(pad8)),
+            "slots_current": (sys_current, 26, lambda: state_from_lines(SLOT_LINES), tile),
+            "ctrl8_noslot": (sys_current, 26, lambda: state_from_lines(CTRL8_LINES), tile),
+            "pad8_current": (sys_current, 26, lambda: state_from_lines(pad8), tile),
         }
         meta = {"oracle": True,
                 "question": "does the model FILL typed slots from the view (REPLACE into "
@@ -277,12 +319,35 @@ def probe_cells(probe: str, cfg: dict, tile26: dict) -> tuple[dict, dict]:
                              "pad8_current": "8 irrelevant digit-free entries — isolates "
                                              "state SIZE (suppression was measured at >=25)"}}
     elif probe == "p1d":
-        cells = {f"k{k}": (sys_current, k, lambda: state_from_lines(s25)) for k in (5, 15, 26)}
+        cells = {f"k{k}": (sys_current, k, lambda: state_from_lines(s25), tile)
+                 for k in (5, 15, 26)}
         meta = {"oracle": False,
                 "question": "does the position channel (k/K) do any conditioning work, holding "
                             "rubric, state and view fixed? (= constructed-pairs falsifier F2)",
                 "note": "k5/k15 pair a verbatim rubric with early-pass labels — a combination "
                         "training never showed; that mismatch IS the probe"}
+    elif probe == "p1e":
+        pA = pass2["view_text"]
+        cells = {
+            # H1 — home-leaving: Phase-A compressed view, empty state. Trained rubric vs the
+            # architecture-explaining prompt. Scored on post_metrics (module-keyed entries).
+            "h1_trained": (sys_scaffold, 2, lambda: IntegrationState(guard="strict"), pA),
+            "h1_explained": (sys_explained, 2, lambda: IntegrationState(guard="strict"), pA),
+            # H2 — fill: pass-26 tile against the ctrl8 homes (oracle, declared) and empty.
+            "h2homes_trained": (sys_current, 26, lambda: state_from_lines(CTRL8_LINES), tile),
+            "h2homes_explained": (sys_explained, 26, lambda: state_from_lines(CTRL8_LINES), tile),
+            "h2empty_explained": (sys_explained, 26,
+                                  lambda: IntegrationState(guard="strict"), tile),
+        }
+        meta = {"oracle": True,
+                "question": "maintainer hypothesis: if the model is TOLD the architecture and "
+                            "its position, can it home-build and fill without training — or at "
+                            "least at larger scale?",
+                "oracle_note": "h2homes cells reuse the declared-oracle ctrl8 state; h1 cells "
+                               "are oracle-free",
+                "explained_role": EXPLAINED_ROLE,
+                "q4_caveat": "qwen7b is Q4_K_M — an op-format failure there is inconclusive "
+                             "(07-26 arbitration §6 quantization caveat)"}
     else:
         raise SystemExit(f"unknown probe {probe}")
     return cells, meta
@@ -292,12 +357,16 @@ def summarize(out_dir: Path) -> None:
     for f in sorted(out_dir.glob("p1*.json")):
         rec = json.loads(f.read_text(encoding="utf-8"))
         print(f"\n=== {f.name} ({rec['_meta']['model_key']}) ===")
-        print(f"{'cell':<20} {'n':>2} | emitted rel/fn/adder | applied rel/fn/adder | plc(e/a)")
+        print(f"{'cell':<20} {'n':>2} | emitted rel/fn/adder | applied rel/fn/adder | plc(e/a) "
+              f"| homes(mean)")
         for label, cell in rec["conditions"].items():
             e, a = cell["emitted_totals"], cell["applied_totals"]
+            pm = [d.get("post_metrics") for d in cell["draws"]]
+            homes = (sum(p["n_module_entries"] for p in pm) / len(pm)) if all(pm) else None
             print(f"{label:<20} {cell['n']:>2} |   {e['relation']}/{e['fn_named']}/{e['adder']}"
                   f"{'':<12}|   {a['relation']}/{a['fn_named']}/{a['adder']}{'':<12}"
-                  f"| {e['placeholders']}/{a['placeholders']}")
+                  f"| {e['placeholders']}/{a['placeholders']}"
+                  f" | {f'{homes:.1f}' if homes is not None else '-'}")
     print("\nProbe numbers. gate_legal=false. Hand-read draws before any claim; the totals are "
           "pre-filters, and every rate's denominator is the cell's n.")
 
@@ -305,9 +374,10 @@ def summarize(out_dir: Path) -> None:
 # --------------------------------------------------------------------------- main
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--probe", choices=["p1a", "p1b", "p1d"])
+    ap.add_argument("--probe", choices=["p1a", "p1b", "p1d", "p1e"])
     ap.add_argument("--models", default=None,
-                    help="comma list from {student,qwen3b}; default: p1d=student, else both")
+                    help="comma list from {student,qwen3b,qwen7b}; default: p1d=student, "
+                         "p1e=all three, else student+qwen3b")
     ap.add_argument("--seeds", default=None, help="e.g. '1-3' or '1,4' (default 1-10)")
     ap.add_argument("--port", type=int, default=8099)
     ap.add_argument("--ctx", type=int, default=24576)
@@ -334,20 +404,22 @@ def main() -> None:
             else:
                 seeds.append(int(part))
 
-    cfg, spec, tile26 = harness_materials()
-    cells, meta_extras = probe_cells(args.probe, cfg, tile26)
+    cfg, spec, tile26, pass2 = harness_materials()
+    cells, meta_extras = probe_cells(args.probe, cfg, tile26, pass2)
 
+    default_models = {"p1d": ["student"], "p1e": ["student", "qwen3b", "qwen7b"]}
     model_keys = (args.models.split(",") if args.models
-                  else (["student"] if args.probe == "p1d" else ["student", "qwen3b"]))
+                  else default_models.get(args.probe, ["student", "qwen3b"]))
 
     if args.dry_run:
         print(f"\nDRY RUN {args.probe}: models={model_keys} seeds={seeds}")
-        for label, (system, user_k, builder) in cells.items():
+        for label, (system, user_k, builder, view) in cells.items():
             st = builder()
             print(f"\n--- cell {label}: k={user_k}, state {n_tokens(st.render())} tok, "
-                  f"{len(st.entries)} entries ---")
+                  f"{len(st.entries)} entries, view {n_tokens(view)} tok ---")
             print(st.render()[:400])
-        print(f"\n--- tile26 view head ---\n{tile26['view_text'][:300]}")
+        if args.probe == "p1e":
+            print(f"\n--- EXPLAINED SYSTEM PROMPT ---\n{explained_system(cfg)}")
         print("\nDry run OK. Nothing served, nothing written.")
         return
 
@@ -379,10 +451,10 @@ def main() -> None:
         server.ensure_running()
         t0 = time.time()
         try:
-            for label, (system, user_k, builder) in cells.items():
+            for label, (system, user_k, builder, view) in cells.items():
                 print(f"  cell {label} (k={user_k}):", flush=True)
                 rec["conditions"][label] = run_cell(server, label, system, user_k, builder(),
-                                                    tile26["view_text"], seeds)
+                                                    view, seeds)
                 out_path.write_text(json.dumps(rec, indent=1, ensure_ascii=False),
                                     encoding="utf-8")
         finally:
