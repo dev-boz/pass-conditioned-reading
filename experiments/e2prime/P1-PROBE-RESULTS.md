@@ -105,6 +105,62 @@ tile's modules; the 155-entry state contained a buried one and showed the 2/10 t
   runner; still worth running, but the home-availability mechanism predicts its effect will be
   indirect (smaller state ⇒ fewer competing non-homes).
 
+## P1e — explained-protocol probe (maintainer hypothesis, run 2026-07-28)
+
+Hypothesis: "the training almost just needs to be a prompt — if the model knew the architecture
+and its position it could almost do it on its own, or at least a larger model should." Cells:
+H1 home-leaving (Phase-A view k=2, empty state), H2 fill (pass-26 tile vs ctrl8 homes / empty);
+trained terse rubric vs an architecture-explaining prompt; student / untrained 3B f16 /
+untrained 7B Q4. n=10 per cell.
+
+| model × cell | homes built (mean module-keyed entries) | applied adder fill | applied relation |
+|---|---|---|---|
+| 7B h1 trained-rubric | **20.0** (one per module — textbook; includes a pricing-table home) | — | — |
+| 7B h1 explained | 19.5 | — | — |
+| 3B h1 trained-rubric | 4.0 | — | — |
+| 3B h1 explained | **0.0** (keyless fragments: "defines helpers: sample_ledger", no module) | — | — |
+| student h1 trained / explained | 4.5 / 1.8 | — | — |
+| 7B h2 homes, trained-rubric | — | **6/10 — but binding-destroying** | 0/10 |
+| 7B h2 homes, explained | — | 2/10 | 0/10 |
+| 3B h2 homes (either prompt) | (explained: ADDs ~4.5 new homes at pass 26 instead of filling) | 0/10 | 0/10 |
+| student h2 homes, trained | — | 9/10, binding preserved | 4/10 |
+| student h2 homes, explained | — | 5/10 | 5/10 |
+
+Hand-reads (verbatim):
+
+- 7B scaffold, seed 1: `S1: module: carrier/cursor20.py defines helpers: tokenize_record, …` —
+  twenty such lines, one per module, from the compressed Phase-A view, under the ORDINARY
+  trained scaffold rubric. The untrained 7B home-builds without any special explanation.
+- 7B fill, seed 2: `REPLACE S2 "RECONCILIATION_ADDER_CENTS": 1365` sprayed at every entry
+  (guard blocked the non-matching ones). The one that landed left **`S2: 1365`** — the value
+  arrived and the *name was destroyed*. Fill-without-binding: the entry no longer says what
+  1365 is. The trained student's fills read `RECONCILIATION_ADDER_CENTS = 1365`.
+- 3B h1 explained, seed 1: eight valid ADDs, every one a keyless helper-name fragment. Not
+  format collapse — content degeneration under the longer prompt.
+
+**Readings:**
+
+1. **Structure is prompt-elicitable and scale-graded; the explanation is not the unlock.** The
+   terse trained rubric already elicits a full per-module scaffold from the untrained 7B; the
+   long explanation helps nobody and actively hurts the 3B (4.0 → 0.0 homes) and the student
+   (whose LoRA is specialized to its trained prompt shape).
+2. **What training actually bought is edit discipline, not strategy.** Untrained 7B fills 6/10
+   destructively; the trained 1.5B fills 9/10 preserving the name=value binding. And
+   **relation-recording remains training-only**: 0/10 in every untrained cell at any scale here,
+   vs the student's 4–5/10.
+3. **The inverse of GATE-3.** The 7B composes a seeded relation 10/10 but never *writes* one;
+   the student writes one 4/10 but composes 1/10. Reading and writing the relation dissociate
+   across scale in opposite directions.
+4. student × h2homes × trained-rubric uses the same seeds/prompt/state as P1b's ctrl8 cell, so
+   its identical 4/10 & 9/10 is a **determinism check, not a replication** — the fresh-seed
+   (11–20) confirming run is still owed under the three-tier rule.
+5. The 7B drove the op format cleanly here (Q4 caveat did not bite in this regime).
+
+**Next $0 cells this licenses:** (a) own-scaffold fill — feed the 7B's H1 state back as the H2
+state: does it fill its *own* homes, untrained? (b) the archive scan (non-oracle home
+availability across the 22 battery draws); (c) the fresh-seed confirming run for the student's
+relation-fill.
+
 ## Caveats
 
 - All P1b/ctrl states are **oracle** (hand-written homes naming fixture identifiers): legal,
