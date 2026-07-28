@@ -95,6 +95,32 @@ _PAIR_REV = re.compile(rf"(?<!\d){TVAL}\D{{1,12}}{QCODE}(?!\d)")
 # a different thing from ignoring the table, and the distinction is what training has to move.
 _TABLE_NAMED = re.compile(r"REGION[_ ]SURCHARGE|region_tables", re.I)
 
+# The 2026-07-26 arbitration's headline — 0/28 archived final states record the RELATION
+# (fn(region) = table[region] + adder) — was measured by hand in a session scratchpad that no
+# longer exists. Mechanized 2026-07-28 and re-verified 0/28 across all three arms, so the relation
+# is a first-class joint alongside mapping and adder; tracking two of three required facts is what
+# produced the §5 mis-attribution. Line-scoped on purpose: co-presence of the three names across
+# one entry with no computational link is NOT a relation (seed 2's S83 — fn name, adder, table
+# import in a single entry — is the canonical near-miss and must not match).
+_FN_NAMED = re.compile(r"compute_line_surcharge", re.I)
+_ADDER_REF = re.compile(r"RECONCILIATION_ADDER|(?<!\d)1365(?!\d)")
+_LINKOP = re.compile(r"\+|\bplus\b|\badds?\b|\bsum of\b", re.I)
+
+
+def _relation_flags(state_text: str) -> dict:
+    strict = partial = operands_linked = False
+    for ln in (state_text or "").splitlines():
+        fn = bool(_FN_NAMED.search(ln)); tbl = bool(_TABLE_NAMED.search(ln))
+        add = bool(_ADDER_REF.search(ln)); op = bool(_LINKOP.search(ln))
+        if fn and tbl and add and op:
+            strict = True          # the full relation, stated where the function is
+        elif fn and op and (tbl or add):
+            partial = True         # fn computationally linked to one operand
+        elif tbl and add and op:
+            operands_linked = True # addition licensed without naming the fn
+    return {"relation_recorded": strict, "relation_partial": partial,
+            "relation_operands_linked": operands_linked}
+
 
 def _int_present(text: str, value: int) -> bool:
     return re.search(rf"(?<!\d){value}(?!\d)", text) is not None
@@ -106,7 +132,10 @@ def rescore(state_text: str) -> dict:
     flat = re.sub(r"\s+", " ", state_text or "")
     pair = bool(_PAIR.search(flat))
     named = bool(_TABLE_NAMED.search(flat))
+    rel = _relation_flags(state_text)  # line-scoped, so computed before the whitespace flatten
     return {
+        **rel,
+        "fn_named": bool(_FN_NAMED.search(flat)),
         "queried_mapping": pair,                       # Tier 2: the mapping itself
         "queried_mapping_reversed": bool(_PAIR_REV.search(flat)),
         "table_named": named,                          # Tier 1: the table exists / what it is for
@@ -136,6 +165,13 @@ def components(rec: dict) -> dict:
         "RETAIN_mapping_at_close": fin["queried_mapping"],
         "RETAIN_adder_at_close": fin["adder_value_present"],
         "RETAIN_both_at_close": fin["queried_mapping"] and fin["adder_value_present"],
+        # The third required fact. "ALL_THREE" is what a readable (not merely inferable) chain
+        # needs at close; 0/28 archived states ever held it.
+        "RECORD_relation_ever": any(f["relation_recorded"] for f in per_pass),
+        "RETAIN_relation_at_close": fin["relation_recorded"],
+        "RETAIN_ALL_THREE_at_close": (fin["queried_mapping"] and fin["adder_value_present"]
+                                      and fin["relation_recorded"]),
+        "fn_named_at_close": fin["fn_named"],
         "LOST_after_recording": (ever_map and not fin["queried_mapping"]),
         "COMPOSE_returns_2353": rec["closing"]["answer"] == TRUTH,
         "precomposed_in_state": fin["precomposed_answer"],
