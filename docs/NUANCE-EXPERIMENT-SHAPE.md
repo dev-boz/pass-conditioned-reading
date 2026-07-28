@@ -84,3 +84,44 @@ This is untrained-floor work (off-the-shelf models, like P1–P7) and costs roug
 It reuses the machinery that's already there: GATE-style validity checks (G1 = their backfill), prominence-matched controls (G3 = their C1/C2), a matched-budget discipline, pre-registered kill criteria, and the LLM-judge-plus-human two-axis grading the parent proposal already specifies. The only new idea is §0's unlock — scoring the *decision the nuance forces* instead of the nuance — which is what makes an emergent-affect target as falsifiable as the arithmetic one, without inheriting the arithmetic target's semantic-weightlessness dead-end.
 
 **Who you need:** a **writer** who can author real-but-unstated human dynamics (the fixtures), not a rater of vibes. If you bring in a humanities collaborator, point them at authoring §2/§3 fixtures and validating §3 gates — that's the genuinely hard, genuinely human part. The scoring is deliberately built to *not* need them.
+
+---
+
+## 10. Refinements (maintainer, 2026-07-28)
+
+**Existence proof + fixture material.** The maintainer has lived the target phenomenon: across
+weeks-long assistant sessions, repeatedly pasting arXiv links expecting the idea to already be
+taken, until the assistant integrated the pattern and named it (reassurance-seeking /
+procrastination) unprompted. Two uses: (a) it demonstrates a large model *can* make the
+integrated call from distributed evidence — G2's premise, observed in the wild; (b) the
+"keeps checking whether the idea is already done" arc is authorable type-A material: each
+individual link-paste is innocuous, the pattern is the signal, and the pre-registered decision
+is whether an ordinary task output ("plan next steps for the project") addresses the underlying
+pattern rather than dutifully processing the latest link.
+
+**R1 — the baseline is a distribution, not a point.** Rolling compaction is nondeterministic
+and its destructiveness varies run to run: one rollout can happen to preserve the arc's carrier
+turns, the next can flatten them. A single baseline rollout is therefore an uninterpretable
+comparison. Adopted:
+- The rolling-compaction arm runs **n rollouts per fixture** (fresh sampling each time); the
+  pre-registered kill criterion names the statistic — coupled must beat the baseline's **mean**
+  signal-reflection rate (deployment-relevant), with best-of-n reported alongside as the
+  stress figure.
+- **Signal-survival audit** per rollout: before the task is even run, judge the compacted
+  context itself for arc traces (do any carrier turns survive?). This decomposes "compaction
+  destroyed the evidence" from "the model failed to use surviving evidence" — without it, a
+  baseline miss is unattributable.
+- A **purposefully destructive** compaction variant is a separate stress arm, not the fair
+  baseline; the fair baseline stays a realistic summarize-when-full policy, sampled.
+
+**R2 — G4, the test-model capability gate (the GATE-3 lesson).** Small non-thinking models may
+be unable to make the integrated call *at all*, regardless of what any schedule preserves —
+the architecture is not aimed at small models; they are what the bench affords. Without a
+capability gate, coupled-0 vs baseline-0 is the Stage-A situation again: a zero that says
+nothing about the architecture. Adopted: before the arms run, hand the candidate test model a
+**small, clean, distilled evidence set** (the arc's carrier turns only, well within its
+window) plus the task, and require it to make the pre-registered call at some rate (bar set in
+the pre-reg). Run the arms on the **smallest model that passes G4**; if nothing local passes,
+the arms move to API models — the experiment is inference-only, so this is affordable, and a
+scale ladder on G4 itself (1.5B → 3B → 7B → 14B → API) is cheap and diagnostic in its own
+right, exactly as the compose ladder was.
