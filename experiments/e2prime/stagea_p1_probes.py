@@ -278,6 +278,94 @@ def padding_lines(target_tokens: int, n_entries: int = 25) -> list[str]:
     return lines
 
 
+# --------------------------------------------------------------------------- p1i view surgery
+_SECTION_SPLIT = re.compile(r"(?=^# ===== module: )", re.M)
+
+
+def _view_sections(view: str) -> list[str]:
+    parts = [p for p in _SECTION_SPLIT.split(view) if p.strip()]
+    assert len(parts) > 1, "view did not split into module sections"
+    return parts
+
+
+def _trim_section(section: str, budget_tok: int) -> str:
+    """Deterministically trim a boilerplate module section to ~budget_tok, cutting at top-level
+    function boundaries. Always keeps the module header + docstring, so a stub can exceed a tiny
+    budget — densities are therefore MEASURED into meta, never assumed."""
+    parts = re.split(r"(?=^def )", section, flags=re.M)
+    out, chunks = parts[0], parts[1:]
+    for c in chunks:
+        if n_tokens(out + c) > budget_tok:
+            break
+        out += c
+    return out.rstrip() + "\n"
+
+
+_PROSE_STEMS = [
+    "The intake review noted that downstream consolidation follows the rollout pattern the "
+    "platform group established during the previous cycle.",
+    "Operational notes from the audit walk-through were retained verbatim so later reviewers "
+    "can reconstruct the ordering of the intake decisions.",
+    "The handover discussion covered routine housekeeping only; no interface or contract "
+    "changes were proposed by either group.",
+    "Scheduling for the consolidation window remains provisional and will be revisited once "
+    "the review board circulates its notes.",
+    "Participants agreed the existing escalation path is adequate and that further process "
+    "changes should wait for the retrospective.",
+    "The notes below restate the standing guidance on review cadence without modifying any "
+    "of the underlying procedures.",
+]
+
+
+def _prose_block(budget_tok: int, salt: int) -> str:
+    """Digit-free prose 'module' — one long docstring, no defs, no identifiers: nothing for a
+    REPLACE-into-the-matching-entry policy to match. Deterministic; salt de-duplicates blocks."""
+    lines = []
+    i = salt
+    while n_tokens("\n".join(lines)) < budget_tok - 12:
+        lines.append(_PROSE_STEMS[i % len(_PROSE_STEMS)]
+                     + (" This paragraph is retained for continuity of the record." if i % 2
+                        else " No action items were raised in this section."))
+        i += 1
+    body = "\n".join(lines)
+    return (f"# ===== module: docs/rollout_notes_{'ab'[salt % 2]}.py =====\n"
+            f'"""Process notes retained for the audit trail.\n\n{body}\n"""\n')
+
+
+def density_views(pass12_view: str) -> tuple[dict[str, str], dict]:
+    """The signal-density ladder. The queried-table section is byte-identical in every cell;
+    only the material around it changes. Filler is cut half-before / half-after the signal
+    (the base tile's natural split is 780/1580 — recorded, not imitated)."""
+    secs = _view_sections(pass12_view)
+    sig = [s for s in secs if "23: 988" in s]
+    assert len(sig) == 1, f"expected exactly one signal section, got {len(sig)}"
+    signal, fillers = sig[0], [s for s in secs if "23: 988" not in s]
+    s_tok = n_tokens(signal)
+    views = {"d10_base": pass12_view}
+    for label, frac in (("d30", 0.30), ("d60", 0.60), ("d90", 0.90)):
+        fb = max(int(s_tok / frac) - s_tok, 0)
+        if fb < 350:      # d90: header stub only; d60: one module trimmed to the whole budget.
+            # Splitting a sub-function budget across two modules yields two header stubs and a
+            # collapsed rung (85% where 60% was asked) — measured, which is why this branch exists.
+            views[label] = _trim_section(fillers[0], fb) + "\n" + signal
+        else:
+            pre = _trim_section(fillers[0], fb // 2)
+            post = _trim_section(fillers[1], fb - fb // 2)
+            views[label] = pre + "\n" + signal + "\n" + post
+    base_tok = n_tokens(pass12_view)
+    pad_half = (base_tok - s_tok) // 2
+    views["pad10_prose"] = (_prose_block(pad_half, 0) + "\n" + signal + "\n"
+                            + _prose_block(pad_half, 1))
+    for lab, v in views.items():
+        assert v.count("23: 988") == 1, (lab, "queried mapping count")
+        assert signal in v, (lab, "signal section not byte-identical")
+        assert "1365" not in v and "compute_line_surcharge" not in v, (lab, "operand leak")
+    measured = {lab: {"view_tokens": n_tokens(v),
+                      "signal_pct": round(100 * s_tok / n_tokens(v), 1)}
+                for lab, v in views.items()}
+    return views, {"signal_tokens": s_tok, "cells": measured}
+
+
 # Slot-syntax control: SAME oracle module/name mentions, SAME entry count, NO typed empty slots.
 # Separates "the [TBD:] slot is load-bearing" from "a small on-topic state permits recording".
 CTRL8_LINES = [
@@ -617,6 +705,46 @@ def probe_cells(probe: str, cfg: dict, tile26: dict, pass2: dict,
                     "mark_is_load_bearing": "p12_confirm_after_prov beats "
                                             "p12_confirm_after_plain — otherwise the gain is the "
                                             "second demand, not the mark"}}
+    elif probe == "p1i":
+        # The signal-density ladder (HANDOFF-2026-08-05 next-step #1). The decisive tiles in the
+        # archived chains were 5.8-10.9% signal and recording ran 1-3/10; the pinned state offers
+        # matching entries for the filler's bulk. This ladder asks whether the filler RATIO is the
+        # binding constraint, holding the queried-table section byte-identical throughout.
+        assert pass12 is not None
+        dviews, construction = density_views(pass12["view_text"])
+        cells = {lab: (sys_current, 12, fixed(lambda: state_from_lines(s25)), v)
+                 for lab, v in dviews.items()}
+        meta = {"oracle": False,
+                "question": "is the filler ratio the binding constraint on RECORD? The queried "
+                            "table section is byte-identical in every cell; only the share and "
+                            "kind of surrounding material changes",
+                "construction": {**construction,
+                                 "base": "the real pass-12 tile untouched (10.0% signal - the "
+                                         "archived decisive-tile regime)",
+                                 "trim_rule": "filler cut at top-level def boundaries, half "
+                                              "before / half after the signal; d90 keeps a "
+                                              "single header stub before it",
+                                 "pad10_prose": "same signal at the BASE length inside "
+                                                "digit-free prose padding (a docstring-only "
+                                                "notes module) - separates matchable-code "
+                                                "competition from sheer view length"},
+                "state": "pinned s25 in every cell (same construction as p1a/p1d: first 25 "
+                         "lines of the archived seed-2 pass-26 state); per-module home "
+                         "presence for this tile reported alongside the results",
+                "readings": {
+                    "density_is_the_constraint": "applied mapping rises with density; the rung "
+                                                 "where it clears is the fixture rebuild's "
+                                                 "requirement as a number",
+                    "competition_not_length": "pad10_prose ~= d90 despite base length -> the "
+                                              "mechanism is matchable-content competition for "
+                                              "the edit budget, not prompt length",
+                    "length_not_competition": "pad10_prose ~= d10_base << d90 -> raw view "
+                                              "length/position binds; a rebuild must shorten "
+                                              "views, not merely densify them",
+                    "extraction_floor": "flat and low at every rung including d90 -> the "
+                                        "blocker is table-row extraction under the current "
+                                        "demand, not view composition; a fixture rebuild alone "
+                                        "will not move RECORD"}}
     else:
         raise SystemExit(f"unknown probe {probe}")
     return cells, meta
@@ -798,7 +926,7 @@ def summarize(out_dir: Path) -> None:
 # --------------------------------------------------------------------------- main
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--probe", choices=["p1a", "p1b", "p1d", "p1e", "p1f", "p1g", "p1h",
+    ap.add_argument("--probe", choices=["p1a", "p1b", "p1d", "p1e", "p1f", "p1g", "p1h", "p1i",
                                         "p1d_pyr", "p1h_pyr"])
     ap.add_argument("--views", default=None,
                     help="pyramid probes only: frozen compressor arm. Defaults per probe — "
@@ -850,7 +978,7 @@ def main() -> None:
     # D25 schedule length so every pre-existing probe is untouched.
     cells = {lab: (tuple(v) + (31,))[:5] for lab, v in cells.items()}
 
-    default_models = {"p1d": ["student"], "p1d_pyr": ["student"],
+    default_models = {"p1d": ["student"], "p1d_pyr": ["student"], "p1i": ["student"],
                       "p1e": ["student", "qwen3b", "qwen7b"],
                       "p1f": ["student", "qwen7b"], "p1g": ["student", "qwen7b"],
                       "p1h": ["student", "qwen7b"]}
@@ -897,6 +1025,10 @@ def main() -> None:
                          "tile": ({"schedule": "pyramid",
                                    "view_source": tile26["view_source"]}
                                   if args.probe == "p1d_pyr" else
+                                  {"k": 12, "K": 31, "view_tokens": None,
+                                   "view_source": "pass-12 tile, hand-edited density ladder "
+                                                  "(per-cell tokens in _meta.construction)"}
+                                  if args.probe == "p1i" else
                                   {"k": 26, "K": 31, "view_tokens": tile26["view_tokens"],
                                    "view_source": tile26["view_source"]}),
                          **meta_extras},
