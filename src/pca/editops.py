@@ -94,6 +94,22 @@ GUARD_JACCARD_TARGET_MAX = 0.10   # below this vs the target, a quote-less REPLA
 GUARD_JACCARD_OTHER_MIN = 0.50    # …if some other single entry matches this strongly,
 GUARD_LEAD_JACCARD_MIN = 0.15     # …or shares the new text's lead token at this overlap.
 
+# Guard mode "retain" (2026-08-01, exploratory): a REPLACE may not silently drop concrete detail
+# the entry already held. Measured motivation, across 3,941 REPLACEs in the pyramid student draws:
+# 37% dropped numeric literals present in the target's text (1,445 events), and that is the
+# mechanism behind the observed clobbers — an entry holding a lookup table was overwritten with
+# prose about an unrelated module. Asking a 1.5B not to do this via the rubric was already tried
+# (p1g ANTI_GRIND, near-negative on a test bed too small to show the pathology); a guard binds
+# regardless of instruction-following. Literals of 2+ digits only: single digits are too common in
+# ordinary prose to carry detail reliably.
+_LITERAL_RE = re.compile(r"(?<!\d)\d{2,}(?!\d)")
+
+
+def _lost_literals(old: str, new: str) -> set[str]:
+    """Numeric literals present in `old` and absent from `new`. Set semantics: repetition is not
+    detail, so an entry that names 988 twice and is rewritten naming it once loses nothing."""
+    return set(_LITERAL_RE.findall(old or "")) - set(_LITERAL_RE.findall(new or ""))
+
 # Document-class-general STRUCTURE descriptors, excluded from overlap scoring: they describe
 # that something is being catalogued, not what. The archived seed-2 slot-repurposing overwrite
 # scored Jaccard 0.19 against its victim purely on module/group/helpers-type tokens (P-A replay,
@@ -226,7 +242,7 @@ class IntegrationState:
     """
 
     def __init__(self, guard: str = "off") -> None:
-        assert guard in ("off", "block", "redirect", "strict"), guard
+        assert guard in ("off", "block", "redirect", "strict", "retain"), guard
         self.entries: list[dict] = []
         self._next = 1
         self.guard = guard
@@ -320,6 +336,16 @@ class IntegrationState:
                     report["redirected"].append(
                         {"from": op["id"], "to": target["id"], "via": note, "op": dict(op)})
                 if op["op"] == "REPLACE":
+                    # "retain": refuse a rewrite that discards concrete detail the entry held.
+                    # Checked here rather than in _content_target so it covers the quoted path too
+                    # (a correctly-quoted REPLACE can still destroy the values it quotes past).
+                    if self.guard == "retain":
+                        lost = _lost_literals(target["text"], op["text"])
+                        if lost:
+                            report["blocked"].append({"op": dict(op),
+                                                      "reason": "blocked_detail_loss",
+                                                      "lost_literals": sorted(lost)[:8]})
+                            continue
                     target["text"] = op["text"]
                     batch_written.add(_norm(op["text"]))
                 else:

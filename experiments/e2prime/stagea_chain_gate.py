@@ -136,12 +136,21 @@ def llama_server_version(exe: Path) -> str:
 
 
 # --------------------------------------------------------------------------- config / fixture
-def load_config() -> dict:
-    """The training-time E2′ harness config, with the addendum's frozen need class substituted."""
+def load_config(guard: str | None = None) -> dict:
+    """The training-time E2′ harness config, with the addendum's frozen need class substituted.
+
+    `guard` overrides the harness guard mode. The frozen protocol is "strict" and that is what the
+    Stage-A verdict was taken under, so an override is an EXPLORATORY arm by construction and
+    forces verdict_eligible False (see main). Motivation for the "retain" mode is measured:
+    1,003 of 3,226 applied REPLACEs in the pyramid draws (31%) destroyed numeric detail the entry
+    already held — see experiments/e2prime/retention_probe.py.
+    """
     cfg = yaml.safe_load((HERE / "teacher_config.yaml").read_text(encoding="utf-8"))
     cfg["task"]["need_class"] = ADDENDUM_NEED_CLASS
     assert cfg["harness"]["guard"] == "strict", cfg["harness"]["guard"]
     assert cfg["harness"]["op_cap"] == 24, cfg["harness"]["op_cap"]
+    if guard:
+        cfg["harness"]["guard"] = guard
     return cfg
 
 
@@ -214,6 +223,10 @@ def preflight(spec: dict, turns: list[dict], scaffold: list[dict], cfg: dict) ->
           f"no overlap (gap {min(f2) - max(f1)})  PASS")
 
     # (D) relevance-control v2 content in the frozen scaffold (informational; companion checks)
+    return _relevance_control(g, spec, scaffold, all_scaffold), sch, phaseA, phaseB
+
+
+def _relevance_control(g: dict, spec: dict, scaffold: list[dict], all_scaffold: str) -> dict:
     rc, pc = spec["relevance_control"], spec["positive_control"]
     g["relevance_control_v2"] = {
         "pc_chunks": [i for i, c in enumerate(scaffold) if pc["decl"] in c["view_text"]],
@@ -227,7 +240,110 @@ def preflight(spec: dict, turns: list[dict], scaffold: list[dict], cfg: dict) ->
           f"PC {g['relevance_control_v2']['pc_chunks']}, "
           f"pair mappings {g['relevance_control_v2']['relevant_pairs']}/24 + "
           f"{g['relevance_control_v2']['arbitrary_pairs']}/24")
-    return g, sch, phaseA, phaseB
+    return g
+
+
+# --------------------------------------------------------------------------- pyramid arm
+# The README's tiling pyramid (docs/SCHEDULE-DISCREPANCY-2026-07-30.md). Views come from a frozen
+# per-arm set built by gen_pyramid_views.py, because the compressor is architecture: which one ran
+# decides what each level can carry, and therefore what this gate can measure.
+#
+# C1 and C2 change character here, on the maintainer's 2026-07-30 call:
+#   - old C1 ASSERTED the hand-built scaffold carried both operands into Phase A. On the pyramid
+#     that is not an assumption to assert but a property to MEASURE, and it differs per arm.
+#   - old C2 ASSERTED no Phase-B tile held both. Here the same question is asked of EVERY view and
+#     the answer STAMPS the run (faithful vs assisted) instead of aborting it.
+def preflight_pyramid(spec: dict, turns: list[dict], views: list[dict], meta: dict,
+                      cfg: dict) -> dict:
+    from verify_pyramid_schedule import classify, operand_markers, view_tags   # noqa: E402
+
+    g: dict = {}
+    qcode, tval = spec["queried_code"], spec["table_value_for_queried"]
+    adder, truth = spec["reconciliation_adder_cents"], spec["ground_truth_answer"]
+    assert spec["fixture_version"] == 2 and spec["seed"] == 70707, spec["fixture_version"]
+    assert spec["table"][str(qcode)] == tval == 988 and adder == 1365 and truth == 2353
+    assert tval + adder == truth
+    g["fixture"] = {"version": 2, "seed": 70707, "queried_code": qcode, "table_value": tval,
+                    "adder": adder, "ground_truth": truth}
+    print(f"(0) fixture v2 seed 70707: REGION_SURCHARGE_CENTS[{qcode}]={tval}, "
+          f"RECONCILIATION_ADDER_CENTS={adder}, target {tval}+{adder}={truth}  PASS")
+
+    src = "\n".join(t["text"] for t in turns)
+    assert f"{qcode}: {tval}" in src and f"RECONCILIATION_ADDER_CENTS = {adder}" in src
+    g["source_presence"] = True
+    print(f"(A) fires-on-source: both fragments present in host doc  PASS")
+
+    lv = sorted({v["level"] for v in views})
+    per_level = {l: sum(1 for v in views if v["level"] == l) for l in lv}
+    assert sum(per_level.values()) == len(views)
+    g["schedule"] = {"kind": "pyramid", "V": meta.get("V"), "levels": lv,
+                     "tiles_per_level": per_level, "K": len(views),
+                     "arm": meta.get("arm"), "compressor": meta.get("compressor_name")}
+    print(f"(S) pyramid: levels {lv}, tiles {list(per_level.values())}, K={len(views)}; "
+          f"arm={meta.get('arm')} compressor={meta.get('compressor_name')}  PASS")
+
+    cls = classify(views, meta, spec)
+    g["early_exposure"] = cls["first_level"]
+    fl = cls["first_level"]
+    print(f"(C1) EARLY EXPOSURE (measured, not asserted): "
+          f"binding {qcode}->{tval} first at level {fl['entry'] or '-'}, "
+          f"table literal at {fl['table_decl'] or '-'}, table named at {fl['table_name'] or '-'}, "
+          f"adder value at {fl['adder_value'] or '-'}, fn at {fl['fn'] or '-'}")
+
+    g["split_intact"] = cls["split_intact"]
+    g["both_operand_views"] = cls["both_operand_views"]
+    g["run_class"] = cls["run_class"]
+    g["run_class_reasons"] = cls["reasons"]
+    g["probe_blind"] = cls["probe_blind"]
+    if cls["split_intact"]:
+        print(f"(C2) split-fact guard: PASS — no single view holds both operands")
+    else:
+        ks = [b["k"] for b in cls["both_operand_views"]]
+        print(f"(C2) split-fact guard: BROKEN — view(s) k={ks[:8]} hold BOTH operands. "
+              f"This arm is answerable from one pass, so it measures RETENTION, not composition.")
+    print(f"(R) RUN CLASS: {cls['run_class'].upper()}"
+          + (f"  ({'; '.join(cls['reasons'])})" if cls["reasons"] else ""))
+
+    M = operand_markers(spec)
+    g["operand_views"] = [{"k": v["k"], "level": v["level"],
+                           "tags": [t for t, on in view_tags(v["view_text"], M).items() if on]}
+                          for v in views if any(view_tags(v["view_text"], M).values())]
+    return g
+
+
+def pyramid_stage(level: int, n_levels: int, fracs: tuple) -> str:
+    """Output demand by RESOLUTION, which on the pyramid is the level — not the pass fraction.
+
+    M1's coupling claim is that one schedule position sets both what the model is shown and what it
+    must produce. On the D25 two-phase schedule those coincide with pass fraction because there are
+    only two resolutions. On the pyramid they do not: level 6 begins at k=32 of 63, so a
+    fraction-based ladder would put ten VERBATIM views under the 'concrete' rubric. Staging by
+    level keeps the two halves of the coupling aligned, which is the point of the schedule.
+    """
+    f = (level - 1) / max(n_levels - 1, 1)
+    stage = "scaffold" if f < fracs[0] else "integrate" if f < fracs[1] else "verbatim"
+    # The stage name is a RUBRICS key; `planted.py` labels the middle stage "concrete" while the
+    # prompt module calls it "integrate", so assert against the real keyset rather than trusting
+    # either literal.
+    assert stage in RUBRICS, f"stage {stage!r} is not a rubric ({sorted(RUBRICS)})"
+    return stage
+
+
+def build_passes_pyramid(views: list[dict], fracs: tuple, stage_map: str) -> list[dict]:
+    n_levels = len(sorted({v["level"] for v in views}))
+    out = []
+    for v in views:
+        out.append({"phase": "B" if v["verbatim"] else "A", "level": v["level"],
+                    "turn_lo": v["turn_lo"], "turn_hi": v["turn_hi"],
+                    "view_text": v["view_text"], "view_source": v["view_source"],
+                    "slice_tokens": v["slice_tokens"],
+                    "compression_ratio": v["compression_ratio"]})
+    for i, p in enumerate(out):
+        p["k"], p["K"] = i + 1, len(out)
+        p["view_tokens"] = n_tokens(p["view_text"])
+        p["stage"] = (pyramid_stage(p["level"], n_levels, fracs) if stage_map == "level"
+                      else _stage(p["k"], p["K"], fracs))
+    return out
 
 
 def build_passes(sch: list[dict], scaffold: list[dict]) -> list[dict]:
@@ -257,9 +373,21 @@ def state_flags(state_text: str, spec: dict) -> dict:
     qcode, tval = spec["queried_code"], spec["table_value_for_queried"]
     adder, truth = spec["reconciliation_adder_cents"], spec["ground_truth_answer"]
     flat = re.sub(r"\s+", " ", state_text)
-    queried = bool(re.search(rf"(?<!\d){qcode}\s*:\s*{tval}(?!\d)", flat))
+    # PARAPHRASE-ROBUST (2026-08-02). This flag used to require a literal colon
+    # (rf"{qcode}\s*:\s*{tval}"), and the state that finally held both operands wrote the binding
+    # as "23→988". The flag read False on a state that held the fact, correctly bound — the exact
+    # "exact-substring on a paraphrasing state" trap pca.planted warns about in its own docstring,
+    # and the outstanding instrument debt the 07-29 handoff listed as
+    # "paraphrase-robust matcher into the chain runner's live flags".
+    # Re-scoring the archive with the analysis-side matcher moved D25 student RECORD from 1/10 to
+    # 3/10, so the undercount reached a verdict-eligible run. The separator class matches the
+    # analysis path (analyze_chain_gate._PAIR) so live and post-hoc scoring cannot diverge again;
+    # the old strict form is kept alongside it for continuity with archived records.
+    queried_strict = bool(re.search(rf"(?<!\d){qcode}\s*:\s*{tval}(?!\d)", flat))
+    queried = bool(re.search(rf"(?<!\d){qcode}\D{{1,8}}{tval}(?!\d)", flat))
     return {
         "queried_mapping": queried,                                   # RECORD: 23 -> 988 held
+        "queried_mapping_colon_only": queried_strict,                 # pre-2026-08-02 form
         "table_value_present": _int_present(flat, tval),
         "adder_named": f"RECONCILIATION_ADDER_CENTS = {adder}" in flat
                        or bool(re.search(rf"RECONCILIATION_ADDER_CENTS\D{{0,4}}{adder}(?!\d)", flat)),
@@ -304,7 +432,9 @@ def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp:
     t0 = time.time()
 
     for p in todo:
-        stage = _stage(p["k"], p["K"], fracs)
+        # pyramid passes carry a precomputed stage (staged by LEVEL, see pyramid_stage);
+        # the D25 path is unchanged and still derives it from the pass fraction.
+        stage = p.get("stage") or _stage(p["k"], p["K"], fracs)
         system = _system_prompt(cfg, stage)
         user = _user_prompt(p["k"], p["K"], st.render(), p["view_text"])
         try:
@@ -325,6 +455,7 @@ def run_draw(server, passes: list[dict], spec: dict, cfg: dict, seed: int, temp:
             first_record_pass, first_record_phase = p["k"], p["phase"]
         rec["passes"].append({
             "k": p["k"], "K": p["K"], "phase": p["phase"], "stage": stage,
+            "level": p.get("level"), "compression_ratio": p.get("compression_ratio"),
             "view_source": p["view_source"], "view_tokens": p["view_tokens"],
             "system": system, "user": user, "raw_output": resp["text"],
             "n_candidate_lines": res.candidate_lines, "n_valid": res.valid,
@@ -445,6 +576,22 @@ def main() -> None:
                     help="PROBE ONLY: explicit GGUF path replacing --arm; forces verdict_eligible "
                          "False. Requires --label.")
     ap.add_argument("--label", default=None, help="output arm name for --model runs")
+    # SCHEDULE ARM (2026-07-30). `d25` is the frozen two-phase schedule the Stage-A verdict was
+    # taken on and is byte-for-byte unchanged. `pyramid` is the README's tiling pyramid
+    # (docs/SCHEDULE-DISCREPANCY-2026-07-30.md), reading frozen per-arm views from
+    # gen_pyramid_views.py. A pyramid run is NEVER verdict-eligible: it is not the pre-registered
+    # protocol the addendum froze, so it cannot be pooled with or mistaken for the Stage-A verdict.
+    ap.add_argument("--schedule", choices=["d25", "pyramid"], default="d25")
+    ap.add_argument("--views", default=None,
+                    help="pyramid only: frozen compressor arm (extractive, graded, llm_general, "
+                         "llm_roleaware, hand_blind, hand_oracle)")
+    ap.add_argument("--guard", default=None, choices=["strict", "retain"],
+                    help="EXPLORATORY: override the harness guard. 'retain' additionally refuses a "
+                         "REPLACE that drops numeric literals the target entry held. Forces "
+                         "verdict_eligible False — the frozen protocol is 'strict'.")
+    ap.add_argument("--stage-map", choices=["level", "fraction"], default="level",
+                    help="pyramid only: derive the output-demand stage from the LEVEL (default, "
+                         "keeps M1's coupling aligned with resolution) or from the pass fraction")
     ap.add_argument("--seeds", default=None,
                     help="comma/range subset of the sampled seeds, e.g. '1-3' or '1,4' (default 1-10)")
     ap.add_argument("--no-anchor", action="store_true", help="skip the seed-42 temp-0 anchor")
@@ -462,7 +609,9 @@ def main() -> None:
     ap.add_argument("--max-passes", type=int, default=None,
                     help="SMOKE ONLY: truncate the schedule. Stamps verdict_eligible=false and "
                          "writes to smoke_* files that --summarize ignores.")
-    ap.add_argument("--out", default="runs/stageA_chain_gate")
+    ap.add_argument("--out", default=None,
+                    help="default: runs/stageA_chain_gate (d25) or "
+                         "runs/stageA_chain_gate_pyramid/<views> (pyramid)")
     ap.add_argument("--dry-run", action="store_true",
                     help="preflight + render pass-1 prompts and the closing frame; serve nothing")
     ap.add_argument("--summarize", action="store_true")
@@ -471,17 +620,37 @@ def main() -> None:
                     help="explicitly NON-VERDICT run with the addendum uncommitted")
     args = ap.parse_args()
 
-    out_dir = ROOT / args.out
+    out = args.out or (f"runs/stageA_chain_gate_pyramid/{args.views}"
+                       + (f"_guard-{args.guard}" if args.guard else "")
+                       if args.schedule == "pyramid" else "runs/stageA_chain_gate")
+    out_dir = ROOT / out
     if args.summarize:
         summarize(out_dir)
         return
 
-    cfg = load_config()
+    cfg = load_config(args.guard)
     spec = json.loads((P7 / "fixture" / "fixture_spec.json").read_text(encoding="utf-8"))
     scaffold = json.loads((P7 / "scaffold_struct.json").read_text(encoding="utf-8"))
     turns = load_turns(P7 / "fixture" / "host_doc.jsonl")
-    guards, sch, _, _ = preflight(spec, turns, scaffold, cfg)
-    passes = build_passes(sch, scaffold)
+    fracs = tuple(cfg["schedule"]["code"]["stage_fracs"])
+
+    if args.schedule == "pyramid":
+        if not args.views:
+            raise SystemExit("--schedule pyramid requires --views ARM (see gen_pyramid_views.py "
+                             "--list)")
+        from verify_pyramid_schedule import load_arm                          # noqa: E402
+        V = cfg["schedule"]["code"]["V"]
+        views, vmeta = load_arm(args.views, V, 2, turns)
+        vmeta["V"] = V
+        guards = preflight_pyramid(spec, turns, views, vmeta, cfg)
+        passes = build_passes_pyramid(views, fracs, args.stage_map)
+        guards["stage_map"] = args.stage_map
+        guards["stage_counts"] = {s: sum(1 for p in passes if p["stage"] == s)
+                                  for s in RUBRICS}
+        print(f"(T) output-demand ladder by {args.stage_map}: {guards['stage_counts']}")
+    else:
+        guards, sch, _, _ = preflight(spec, turns, scaffold, cfg)
+        passes = build_passes(sch, scaffold)
 
     # forcing-boundary audit (E2PRIME-CRITERION §2): the recorder prompt may not name the probe.
     probe_tokens = ["REGION_SURCHARGE_CENTS", "RECONCILIATION_ADDER_CENTS",
@@ -493,12 +662,16 @@ def main() -> None:
 
     if args.dry_run:
         print("\n" + "=" * 78 + "\nDRY RUN — no model served\n" + "=" * 78)
-        print(f"\nschedule: K={len(passes)} "
+        print(f"\nschedule={args.schedule}"
+              + (f" views={args.views}" if args.schedule == "pyramid" else "")
+              + f": K={len(passes)} "
               f"(A={sum(p['phase'] == 'A' for p in passes)}, B={sum(p['phase'] == 'B' for p in passes)})")
-        fr = tuple(cfg["schedule"]["code"]["stage_fracs"])
-        stages = [(p["k"], p["phase"], _stage(p["k"], p["K"], fr), p["view_tokens"]) for p in passes]
-        for k, ph, sg, vt in stages:
-            print(f"   pass {k:>2}/{len(passes)} phase={ph} stage={sg:<9} view={vt}tok")
+        for p in passes:
+            sg = p.get("stage") or _stage(p["k"], p["K"], fracs)
+            lv = f" L{p['level']}" if p.get("level") else ""
+            cr = f" {p['compression_ratio']:>5.1f}x" if p.get("compression_ratio") else ""
+            print(f"   pass {p['k']:>2}/{len(passes)}{lv} phase={p['phase']} "
+                  f"stage={sg:<9}{cr} view={p['view_tokens']}tok")
         print(f"\n--- RECORDER SYSTEM PROMPT (stage=scaffold) ---\n{_system_prompt(cfg, 'scaffold')}")
         print(f"\n--- RECORDER USER PROMPT (pass 1, view elided) ---\n"
               f"{_user_prompt(1, len(passes), IntegrationState(guard='strict').render(), '<VIEW>')}")
@@ -512,8 +685,11 @@ def main() -> None:
 
     gate = addendum_commit_gate(args.allow_uncommitted_addendum)
     # A --model run is a probe by construction: it is not a pre-registered arm, so it can never be
-    # verdict-eligible regardless of the addendum commit gate.
-    verdict_eligible = gate["committed"] and not args.max_passes and not args.model
+    # verdict-eligible regardless of the addendum commit gate. Neither is a pyramid run — the
+    # addendum froze the D25 schedule, so a different schedule is a new experiment, never poolable
+    # with (or mistakable for) the Stage-A 0/10 verdict.
+    verdict_eligible = (gate["committed"] and not args.max_passes and not args.model
+                        and args.schedule == "d25" and not args.guard)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     seeds = [s for s, _ in SAMPLED_DRAWS]
@@ -551,6 +727,18 @@ def main() -> None:
             "scale_rung_probe": bool(args.model),
             "probe_note": ("NOT a pre-registered Stage-A arm; never poolable with the frozen "
                            "0/10 verdict" if args.model else None),
+            "schedule_kind": args.schedule,
+            "views_arm": args.views,
+            "stage_map": args.stage_map if args.schedule == "pyramid" else None,
+            "guard_override": args.guard,
+            "run_class": guards.get("run_class"),
+            "run_class_reasons": guards.get("run_class_reasons"),
+            "split_intact": guards.get("split_intact"),
+            "early_exposure": guards.get("early_exposure"),
+            "schedule_note": ("pyramid schedule (docs/SCHEDULE-DISCREPANCY-2026-07-30.md); NOT the "
+                              "addendum-frozen D25 protocol, so never verdict-eligible and never "
+                              "poolable with the Stage-A verdict"
+                              if args.schedule == "pyramid" else None),
             "addendum_commit_gate": gate,
             "protocol": {"guard": cfg["harness"]["guard"], "op_cap": cfg["harness"]["op_cap"],
                          "state_budget_tok": cfg["harness"]["state_budget_tok"],
@@ -574,6 +762,8 @@ def main() -> None:
                 "editops": sha256_file(ROOT / "src" / "pca" / "editops.py"),
                 "teacher_gen": sha256_file(ROOT / "src" / "pca" / "teacher_gen.py"),
                 "planted": sha256_file(ROOT / "src" / "pca" / "planted.py"),
+                "pyramid_views": (sha256_file(HERE / "pyramid_views" / f"{args.views}.json")
+                                  if args.schedule == "pyramid" and args.views else None),
                 "grammar": hashlib.sha256(GRAMMAR.encode()).hexdigest(),
                 "rubrics": {k: hashlib.sha256(v.encode()).hexdigest() for k, v in RUBRICS.items()},
                 "model": None if args.skip_model_hash else sha256_file(model),
