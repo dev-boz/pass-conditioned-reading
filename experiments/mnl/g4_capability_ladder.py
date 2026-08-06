@@ -22,12 +22,22 @@ interpretation is the unreliable layer, the archive is not).
     python experiments/mnl/g4_capability_ladder.py --dry-run
     python experiments/mnl/g4_capability_ladder.py                     # local ladder
     python experiments/mnl/g4_capability_ladder.py --models qwen7b,qwen14b
+    python experiments/mnl/g4_capability_ladder.py --models haiku_remote,sonnet_remote  # API rungs
     python experiments/mnl/g4_capability_ladder.py --summarize
+
+API rungs (the R2 escalation, and the G2 PREMISE check on the distilled evidence set — full G2
+on the authored 80-150K fixture is still owed): Claude via `claude -p` on a remote host's OAuth
+pool, the D30 delivery path. Requires PCA_CLAUDE_SSH_HOST in the environment; the host never
+enters this repo or the artifacts (ClaudePClient provenance records the path as
+`claude-p-remote:<alias>`). Named limitation, inherited from the teacher lineage: `claude -p`
+exposes no temperature/seed control, so API-rung draws are repeated sampling at CLI defaults and
+the seed column is a draw label only.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -38,7 +48,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from pca.llm import LlamaServer                                          # noqa: E402
+from pca.llm import LlamaServer, ClaudePClient                           # noqa: E402
 
 MODELS = {
     "qwen1_5b": ROOT / "models" / "Qwen2.5-1.5B-Instruct-f16.gguf",
@@ -46,6 +56,9 @@ MODELS = {
     "qwen7b": ROOT / "models" / "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
     "qwen14b": ROOT / "models" / "Qwen2.5-14B-Instruct-Q4_K_M.gguf",
 }
+# API rungs: model key -> `claude -p --model` alias. Ceiling first (sonnet), teacher-class
+# (haiku) for continuity with the compressor lineage.
+API_MODELS = {"haiku_remote": "haiku", "sonnet_remote": "sonnet"}
 LADDER = ["qwen1_5b", "qwen3b", "qwen7b", "qwen14b"]
 SEEDS = list(range(1, 11))
 TEMP = 0.7
@@ -213,24 +226,41 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     exe = ROOT / "models" / "llamacpp" / "llama-server.exe"
     for mk in keys:
-        model = MODELS[mk]
-        assert model.exists(), model
+        is_api = mk in API_MODELS
+        if is_api:
+            assert os.environ.get("PCA_CLAUDE_SSH_HOST"), \
+                "API rungs need PCA_CLAUDE_SSH_HOST in the environment (host never enters the repo)"
+            model_desc = f"claude-p-remote:{API_MODELS[mk]}"
+        else:
+            model = MODELS[mk]
+            assert model.exists(), model
+            model_desc = str(model)
         out_path = OUT_DIR / f"g4_{mk}.json"
         if out_path.exists() and not args.redo:
             print(f"[skip] {out_path.name} exists")
             continue
-        rec = {"_meta": {"probe": True, "gate_legal": False, "gate": "M-NL G4 (capability)",
-                         "model_key": mk, "model_path": str(model),
+        rec = {"_meta": {"probe": True, "gate_legal": False,
+                         "gate": ("M-NL G4 ladder, API rung — doubles as the G2 PREMISE check "
+                                  "on the distilled evidence set; full G2 on the authored "
+                                  "fixture still owed" if is_api else "M-NL G4 (capability)"),
+                         "model_key": mk, "model_path": model_desc,
                          "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                          "seeds": seeds, "temp": TEMP, "max_tokens": MAX_TOKENS,
+                         **({"decoding": "claude -p CLI defaults — no temp/seed control; "
+                                         "the seed column is a draw label only"} if is_api
+                            else {}),
                          "rubric": "DRAFT, unsigned — MNL-TYPE-A-FIXTURE-DRAFT.md §4",
                          "evidence": "carrier turns only, concentrated (capability, not "
                                      "preservation)", "task": TASK},
                "system": SYSTEM, "user": user, "draws": []}
-        print(f"\n{'=' * 66}\nG4 {mk} ({model.name})\n{'=' * 66}", flush=True)
-        server = LlamaServer(str(exe), str(model), ctx=args.ctx, port=args.port,
-                             threads=args.threads, n_gpu_layers=args.ngl)
-        server.ensure_running()
+        print(f"\n{'=' * 66}\nG4 {mk} ({model_desc})\n{'=' * 66}", flush=True)
+        if is_api:
+            server = ClaudePClient(model=API_MODELS[mk],
+                                   ssh_host=os.environ["PCA_CLAUDE_SSH_HOST"])
+        else:
+            server = LlamaServer(str(exe), str(model), ctx=args.ctx, port=args.port,
+                                 threads=args.threads, n_gpu_layers=args.ngl)
+            server.ensure_running()
         t0 = time.time()
         try:
             for seed in seeds:
