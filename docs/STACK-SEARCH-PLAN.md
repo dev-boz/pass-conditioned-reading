@@ -41,6 +41,39 @@ state policy — that makes record→retain→compose work semi-reliably? And wh
 frozen stack produce?** The second list, ranked by how hard it blocks the chain, is what training
 is for.
 
+## 2a. What would count as the architecture working — and where that stands (2026-08-06)
+
+Recorded so the distinction cannot drift: **"the pipeline replicated" is not "the architecture
+works," and the architecture has not yet been demonstrated, even barely.**
+
+- **Working means:** on a fixture where no single view can hold all the answer's parts (the
+  split-fact guard holds — a *faithful* arm), a recorder records the parts from **different
+  passes**, retains them, and a reader composes the answer at the close, at a rate above the
+  floor's zero. That is F2's bar, and it hinges on S-B (faithful) for exactly this reason.
+- **Current status:** in this program, faithful arms have produced **zero** end-to-end passes
+  across every chain battery. The replicated 08-02 confirm ran on an *assisted* arm — the
+  role-aware compressor co-located table, adder and relation in one pass-1 view — so it
+  demonstrates the **retention pipeline** (coverage + recording + retention + close-from-state,
+  and the state-exactly-sufficient concordance), which is real and necessary, but not the
+  cross-pass integration that makes this architecture itself. Cite it accordingly.
+- **The existence evidence that keeps the bet alive:** three hand-verified single draws
+  (Qwen-72B, Llama-70B, Mistral-24B, P7 era, old schedule) where the full record→retain→compose
+  chain fired across passes — plus 1-of-22 composes among cross-family states that held both
+  operands. Potential, never a rate, never on the designed schedule.
+- **Why continuing is justified (maintainer, 2026-08-06, recorded):** the large-model draws
+  showed the potential is there; the continuation rule is *keep going while there is potential
+  and component progress* — which is the wall test (operating mode rule 4) applied as a
+  personal standard; and the prior art (incremental summary-state updating, hierarchical
+  merging, the RLM family) shows adjacent mechanisms work, so the bet is that this is an
+  engineering problem, not an impossibility. The same prior art defines the baselines any
+  eventual claim must beat.
+- **Why no test so far was fair:** every prior attempt was disqualified by something since
+  found and fixed — the two-level schedule (not the design), a curriculum that never demanded
+  the scored behavior, and a fixture whose whole distinctive content fits inside one view so a
+  competent compressor collapses the cross-pass problem. The rebuilt fixture's numeric spec
+  exists to make the question answerable. **F2 on S-B is therefore the first fair existence
+  test of the architecture, not an optimization pass.**
+
 ## 3. F1 — the joint battery sweep (single-pass cells, $0, current materials)
 
 Five joint-level micro-tests, all existing constructions. Frozen weights. Probe conventions
