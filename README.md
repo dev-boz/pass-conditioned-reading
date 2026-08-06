@@ -4,6 +4,12 @@ This is the testing repo for pass-conditioned reading, one of the core pieces of
 
 The main repo explains the idea and where it came from. This repo is where I try to break it cheaply before spending real money on training. Everything is set up as a pre-registration, meaning the design, the criteria that would kill it, and the cheap gate experiments are all on record before the expensive training run (E2′) is attempted. Partly because that's good practice, and partly so that when E2′ eventually happens nobody (including me) can quietly move the goalposts after seeing the results. So what you're looking at here is not a finished result, it's a running audit trail.
 
+## Scope: what the architecture is for, and what the small models here are for
+
+DiSCo is for any size model and any size context window. The target regime is sessions and documents that outgrow every window - multi-million-token conversations that even a 1M-token window can't hold. A bigger window makes the method easier (less compression per view, fewer passes), not redundant, and model capability is an orthogonal axis: it's "and", not "instead of".
+
+The 1.5B-14B local models used everywhere below are the test rig, not the deployment story. They're what a compute-bound program can iterate on for $0, and being budget-conscious about the *testing* was never a claim about the *architecture*. At the target scale there is no single read at any budget, so the honest baselines are the other unbounded-input methods - rolling compaction, hierarchical merging, retrieval - and a budget-matched comparison against those is still owed (see the status update below). The canonical statement of this framing is [DISCO-NATIVE-ARCHITECTURE.md](docs/DISCO-NATIVE-ARCHITECTURE.md) §1, and the parent proposal is vendored at [docs/DISCO-README-SNAPSHOT-2026-08-06.md](docs/DISCO-README-SNAPSHOT-2026-08-06.md) so the spec this repo tests is greppable in this repo.
+
 ## Where to start
 
 If you only read one thing, read the [public summary](docs/PUBLIC-SUMMARY.md). It's the short plain-language version, and the honest one-liner is: not unfeasible, possibly feasible with a trained model. It didn't fail, and it showed potential.
@@ -18,6 +24,8 @@ Then there are two review documents, the [gauntlet arbitration](docs/gauntlet-ar
 
 A quick note first: since the table below was written, experiments through P7 (split-unit record→retain→compose) and a cross-family existence check have finished (26 June 2026). The consolidated findings doc linked above is the current record, the table is the running log through P6.
 
+**Status update, 2026-08-06 - the record since the consolidated findings.** A Stage-A student (Qwen2.5-1.5B LoRA) was trained and its pre-registered chain gate returned an architecture-gate verdict (0/10) - which two adversarial review rounds and a follow-up audit reclassified as a demand/data failure: the relation the chain is scored on was never demanded in training (0/28 archived states record it, `ANSWER:` appears 0 times in 5,730 training rows). While repairing that, I found the implemented schedule was never the architecture's pyramid at all ([SCHEDULE-DISCREPANCY-2026-07-30](docs/SCHEDULE-DISCREPANCY-2026-07-30.md)), so the Stage-A verdict binds that two-level instantiation, not the design. The pyramid was then built and validated, six compressor arms frozen and measured ([PYRAMID-COMPRESSOR-RESULTS](experiments/e2prime/PYRAMID-COMPRESSOR-RESULTS.md)), and an edit guard added after measuring the edit pathology (37% of REPLACEs drop numeric literals the entry held). With those two structural pieces the pipeline completed end to end for the first time, and it replicated: a 1.5B recorder builds a bounded state from a 65,781-token document that an untrained 3B answers a cross-module question from, confirmed on held-out seeds under a pre-registered confirm that passed all four predictions ([CONFIRM-PREREG-2026-08-02](experiments/e2prime/CONFIRM-PREREG-2026-08-02.md)). The same run exposed a recorder/reader split: every reader from 3B to a frontier model answers on exactly the draws whose state holds the operands - the state is exactly sufficient, and the remaining headroom is all in the recorder. Scope, stated plainly: one fixture (now measured as saturated - its distinctive content fits inside a single view budget), no budget-matched external baseline yet, and the k/K conditioning channel has measured inert twice on a student that was never trained on a resolution ladder; the pyramid-trained run that would actually test pass-conditioning is the next training step. The live lever board is the [exploration ledger](experiments/e2prime/STAGEA-EXPLORATION-LEDGER.md); the session-by-session record is the handoffs in `docs/`.
+
 | Stage | What | Where it landed |
 |---|---|---|
 | E0 | Position-from-view classifier (the regime gate) | Done (provisional), superseded by E0-final |
@@ -28,7 +36,7 @@ A quick note first: since the table below was written, experiments through P7 (s
 | E0-final | Non-provisional E0 on production (Haiku-summarised) views | Done, regime is signal-carrying (0.561, Kiro-only robustness 0.584) |
 | P5 | Verbatim-stage contamination, does prior state suppress recording of a detail present in the view? | Done, no robust contamination. P4's misses were task-vagueness, not prior-state suppression |
 | P6 | Whole-document synthesis, a causal why whose hinge sits mid-document | Pre-registered ([pre-reg](experiments/p6_global_synthesis/PRE-REG.md), [gold chain](experiments/p6_global_synthesis/gold_chain.json)), first of a planned battery, run pending |
-| E1′ / E2′ | The trained conditioning-channel and coupling experiments | Gated behind everything above, not yet run |
+| E1′ / E2′ | The trained conditioning-channel and coupling experiments | Stage-A (the first trained instantiation) ran and gated - see the status update above; E2′ proper remains gated on the fixture and demand repairs |
 
 ### E0: can you tell where you are just by looking?
 
@@ -68,7 +76,7 @@ The answer is no robust contamination. Under an explicit ask, the untrained floo
 
 P6 asks whether the coarse-scaffold schedule can answer a causal why whose hinge sits mid-document, the kind of question that head+tail truncation and RAG structurally miss. Arms are dense, coupled, and verbatim-only with no scaffold. It's pre-registered and is the first of a planned battery.
 
-E1′ and E2′, the trained conditioning-channel and coupling experiments, sit gated behind all of the above and have not been run. They're the actual arbiters.
+E1′ and E2′, the trained conditioning-channel and coupling experiments, are the actual arbiters. Stage-A - the first trained instantiation - has since run and gated; the status update under Current status is the honest account of where that landed and why the verdict binds the instantiation rather than the design.
 
 ## Reproducing the results
 
