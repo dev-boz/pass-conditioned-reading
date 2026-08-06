@@ -89,7 +89,7 @@ The chain needs **three** recorded facts — mapping `23→988`, adder `1365`, a
 ladder RAN 08-06 — results in `HOME-AVAILABILITY-RESULTS.md` and `SIGNAL-DENSITY-RESULTS.md`.)*
 
 - **P1c** — enforced 4,000-tok budget re-run (+ stage-scaled op_cap variant).
-- **M-NL G2 (oracle ceiling)** — held for the maintainer's alternative to `claude -p`.
+- **M-NL G2 premise check RAN 2026-08-06** (the maintainer's alternative arrived: remote `claude -p` over ssh, D30 path) — **PASSES**: on the distilled carriers, hand-read, sonnet (claude-sonnet-5) 10/10 integrated / haiku 6/10 (+4 partial), zero flattened at either rung; locals stay 0/10 ⇒ the §6a zeros mean "small models can't", the arms move to API models per R2. Full G2 on the authored 80-150K fixture still owed. `MNL-TYPE-A-FIXTURE-DRAFT.md` §6b; artifacts `runs/mnl_g4/g4_{haiku,sonnet}_remote.json`. **Next M-NL step: author the fixture bulk** (maintainer authors/approves; §6b carries two authoring notes).
 - Lever 3 floor probe.
 - P1i extension if ever needed: a home-present arm (does density still bind when the state holds a
   table home?), and a tail-row query (transcription truncation, observed once).

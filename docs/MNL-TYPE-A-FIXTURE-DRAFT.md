@@ -145,6 +145,48 @@ Relevant to your authoring decisions:
 - If the zeros hold after G2 passes, the arms move to API models per R2 and the local ladder's job
   is done.
 
+## 6b. API rungs ran (2026-08-06) — the G2 premise check PASSES; read §6a's zeros accordingly
+
+The maintainer's `claude -p` alternative arrived (remote host's OAuth pool over ssh — the D30
+path; host via `PCA_CLAUDE_SSH_HOST`, never in the repo). Two rungs on the identical distilled
+evidence set, n=10 each, hand-read in full (the CLI exposes no temp/seed control; draws are
+repeated sampling at defaults). Artifacts: `runs/mnl_g4/g4_{haiku,sonnet}_remote.json`.
+
+**Hand-read against the §4 draft rubric** (the mechanical pre-filter badly undercounts at
+API-rung diction — it printed 1/10 provisional 2s for BOTH rungs; the phrasings it misses
+include "quarantine novelty-checking", "batch into one fixed slot", "interrupts always win",
+"crowding out delivery". The pre-filter remains a reading aid; do not quote its numbers):
+
+| rung | integrated (2) | partial (1) | flattened (0) | latest-paper-centred |
+|---|---|---|---|---|
+| local 1.5B-14B (§6a) | 0/10 every rung | — | most | up to 9/10 |
+| `haiku_remote` | **6/10** | 4/10 | **0/10** | 0/10 |
+| `sonnet_remote` (= claude-sonnet-5) | **10/10** | 0/10 | **0/10** | 0/10 |
+
+Every sonnet draw names the displacement pattern outright ("novelty-monitoring... has been
+crowding out delivery", "literature-watching is structured as an interrupt, and interrupts
+always win"), several recover the ORDERING leg from the timestamps alone ("7/7 weeks opened
+with a paper check", "often *before* the day's planned work"), all impose an explicit bound
+(one batched slot, a cap, a two-tier triage), and none plans around the latest paper. Haiku's
+four partials are diagnose-then-ask-questions draws — the call is visible, the plan-around is
+deferred; zero draws flatten.
+
+**Consequences:**
+1. **R2's confound is resolved for the distilled set:** the §6a zeros mean "small models cannot
+   make this call", not "the arc is too subtle". A model CAN make the integrated call on these
+   carriers — the shape doc's premise, now measured on this material rather than remembered
+   from the lived anecdote.
+2. **The M-NL arms move to API models** (per R2: nothing local passes; haiku is the smallest
+   passer and is already the teacher-class model).
+3. **Full G2 as specified (§3 — the WHOLE authored 80-150K source, signal embedded in bulk) is
+   still owed** once the fixture is authored. What passed today is the capability premise on
+   concentrated carriers, deliberately easy by design.
+4. Two authoring notes from the read: several sonnet draws step outside the fixture frame
+   (offering scheduling tooling, "save this as a project memory") — the authored bulk should
+   keep the assistant voice in-world so G1/G2 outputs stay scoreable; and both rungs wobble on
+   the paper COUNT (7/8/9) without inventing completions — counts are not signal-bearing, but
+   the ledger's "exactly 9 carriers" check matters for anyone scoring rate claims.
+
 ## 7. What this draft does NOT settle
 
 - The fixture's actual prose (maintainer authors).
