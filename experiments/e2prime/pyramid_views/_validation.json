@@ -1,0 +1,300 @@
+[
+ {
+  "arm": "extractive",
+  "compressor": "extractive-sumbasic-v1",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   22.5,
+   11.2,
+   5.7,
+   2.8,
+   1.4,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": true,
+  "within_level_spread": 0.242,
+  "budget_fill": 0.966,
+  "view_tokens": 155664,
+  "cost_vs_source": 2.37,
+  "first_level": {
+   "entry": 6,
+   "table_decl": 6,
+   "table_name": 6,
+   "adder_value": 6,
+   "adder_name": 6,
+   "fn": 6
+  },
+  "split_intact": true,
+  "probe_blind": true,
+  "run_class": "faithful",
+  "reasons": [],
+  "both_operand_views": [],
+  "hard_failures": [],
+  "notes": []
+ },
+ {
+  "arm": "graded",
+  "compressor": "graded-structural-v1",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   22.0,
+   11.2,
+   5.8,
+   3.0,
+   1.5,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": true,
+  "within_level_spread": 0.434,
+  "budget_fill": 0.913,
+  "view_tokens": 150730,
+  "cost_vs_source": 2.29,
+  "first_level": {
+   "entry": 2,
+   "table_decl": 2,
+   "table_name": 1,
+   "adder_value": 1,
+   "adder_name": 1,
+   "fn": 2
+  },
+  "split_intact": true,
+  "probe_blind": true,
+  "run_class": "faithful",
+  "reasons": [],
+  "both_operand_views": [],
+  "hard_failures": [],
+  "notes": []
+ },
+ {
+  "arm": "llm_general",
+  "compressor": "claude-haiku-4-5",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   55.7,
+   18.3,
+   10.8,
+   3.8,
+   2.3,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": true,
+  "within_level_spread": 0.643,
+  "budget_fill": 0.615,
+  "view_tokens": 123005,
+  "cost_vs_source": 1.87,
+  "first_level": {
+   "entry": 6,
+   "table_decl": 6,
+   "table_name": 2,
+   "adder_value": 4,
+   "adder_name": 4,
+   "fn": 2
+  },
+  "split_intact": true,
+  "probe_blind": true,
+  "run_class": "faithful",
+  "reasons": [],
+  "both_operand_views": [],
+  "hard_failures": [],
+  "notes": []
+ },
+ {
+  "arm": "llm_roleaware",
+  "compressor": "claude-haiku-4-5-roleaware",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   46.8,
+   24.9,
+   13.4,
+   4.4,
+   3.3,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": false,
+  "within_level_spread": 1.196,
+  "budget_fill": 0.474,
+  "view_tokens": 109817,
+  "cost_vs_source": 1.67,
+  "first_level": {
+   "entry": 1,
+   "table_decl": 1,
+   "table_name": 1,
+   "adder_value": 1,
+   "adder_name": 1,
+   "fn": 1
+  },
+  "split_intact": false,
+  "probe_blind": true,
+  "run_class": "assisted",
+  "reasons": [
+   "single_pass_answerable (k=[1], level [1])"
+  ],
+  "both_operand_views": [
+   {
+    "k": 1,
+    "level": 1
+   }
+  ],
+  "hard_failures": [],
+  "notes": [
+   "G4: within-level ratio spread 120% — levels overlap in resolution, so k indexes resolution only loosely"
+  ]
+ },
+ {
+  "arm": "hand_blind",
+  "compressor": "authored-hand_blind",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   30.5,
+   27.0,
+   22.0,
+   16.7,
+   12.7,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": false,
+  "within_level_spread": 0.958,
+  "budget_fill": 0.18,
+  "view_tokens": 82510,
+  "cost_vs_source": 1.25,
+  "first_level": {
+   "entry": 1,
+   "table_decl": 1,
+   "table_name": 1,
+   "adder_value": 1,
+   "adder_name": 1,
+   "fn": 1
+  },
+  "split_intact": false,
+  "probe_blind": true,
+  "run_class": "assisted",
+  "reasons": [
+   "single_pass_answerable (k=[1], level [1])"
+  ],
+  "both_operand_views": [
+   {
+    "k": 1,
+    "level": 1
+   }
+  ],
+  "hard_failures": [],
+  "notes": [
+   "G4: within-level ratio spread 96% — levels overlap in resolution, so k indexes resolution only loosely"
+  ]
+ },
+ {
+  "arm": "hand_oracle",
+  "compressor": "authored-hand_oracle",
+  "n_passes": 63,
+  "levels": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "ratios": [
+   30.5,
+   27.0,
+   22.0,
+   16.7,
+   12.7,
+   1.0
+  ],
+  "G1": true,
+  "G2": true,
+  "G3_monotone": true,
+  "G3_verbatim_floor": true,
+  "G4": false,
+  "within_level_spread": 0.958,
+  "budget_fill": 0.18,
+  "view_tokens": 82510,
+  "cost_vs_source": 1.25,
+  "first_level": {
+   "entry": 1,
+   "table_decl": 1,
+   "table_name": 1,
+   "adder_value": 1,
+   "adder_name": 1,
+   "fn": 1
+  },
+  "split_intact": false,
+  "probe_blind": false,
+  "run_class": "assisted",
+  "reasons": [
+   "single_pass_answerable (k=[1], level [1])",
+   "probe_aware_authoring"
+  ],
+  "both_operand_views": [
+   {
+    "k": 1,
+    "level": 1
+   }
+  ],
+  "hard_failures": [],
+  "notes": [
+   "G4: within-level ratio spread 96% — levels overlap in resolution, so k indexes resolution only loosely"
+  ]
+ }
+]

@@ -31,6 +31,58 @@ def _summary_prompt(text: str, target_tokens: int) -> str:
     )
 
 
+# The ROLE-AWARE compression prompt (2026-07-30). Unlike `_summary_prompt` — which asks for a
+# generic summary and knows nothing about who reads it — this prompt states the compressor's place
+# in the architecture: it is producing one level of a coarse-to-fine pyramid for a downstream reader
+# that never sees the source and maintains a running state across passes.
+#
+# FORCING BOUNDARY (E2PRIME-CRITERION §2): task-agnostic by construction. It names no structure,
+# identifier, or value from any probe — only classes of content ("named declarations", "key->value
+# bindings"). Audited mechanically against PROBE_TOKENS wherever it is used.
+#
+# PROVENANCE, stated plainly: the priority order below was written knowing the measured failure
+# modes of general compression on this document class (a lookup table reduced to its range cannot
+# answer a lookup; a view that is 94% boilerplate produces a state that records boilerplate). Those
+# are general properties of compressing structured documents, and each instruction is stated
+# generically — but they were *selected* because those failures were observed, and that is a
+# different thing from deriving them a priori. Recorded so the arm is read for what it is.
+def _role_aware_prompt(text: str, target_tokens: int, slice_tokens: int | None = None,
+                       level: int | None = None, n_levels: int | None = None) -> str:
+    ratio = (slice_tokens / max(target_tokens, 1)) if slice_tokens else None
+    where = ""
+    if level and n_levels:
+        where = (f" You are producing a view at level {level} of {n_levels}"
+                 f"{' (the coarsest)' if level == 1 else ''}.")
+    budget = (f"This span is {slice_tokens:,} tokens and your budget is {target_tokens:,} tokens"
+              f"{f' (about {ratio:.0f}x compression)' if ratio else ''}."
+              if slice_tokens else f"Your budget is about {target_tokens:,} tokens.")
+    return (
+        "You are the compression stage of a scheduled multi-pass read.\n\n"
+        "A long document is read as a coarse-to-fine pyramid: the first level is the whole "
+        "document compressed to a fixed budget, the next level is two halves each compressed to "
+        "that same budget, and so on, down to a final level that is verbatim. A downstream reader "
+        "sees your output ONLY — it never sees the source — and it maintains a single running "
+        "state across every pass. Finer views will cover this same span later." + where + "\n\n"
+        + budget + "\n\n"
+        "Preserve, in priority order:\n"
+        "1. Named declarations and their exact values — constants, identifiers, parameters, "
+        "figures, dates. A value the reader cannot reconstruct is worth more than a sentence "
+        "describing it.\n"
+        "2. Key-to-value bindings. If a collection will not fit, prefer keeping fewer entries "
+        "COMPLETE over describing all of them in aggregate: a collection reduced to its size and "
+        "range can no longer answer a question about any one member.\n"
+        "3. Cross-unit relationships — what calls, reads, or depends on what.\n"
+        "4. Structure — what each unit is and what it declares, so a later pass has somewhere to "
+        "put detail.\n\n"
+        "Drop first: repeated boilerplate; near-identical members of an obvious pattern (name the "
+        "pattern once instead of listing it); narrative prose about content that is itself "
+        "present; and internal detail that never escapes its unit.\n\n"
+        "Be explicit about loss. Whenever you compress something away, leave a short marker naming "
+        "what is missing, so the reader knows a finer pass must supply it.\n\n"
+        "Output ONLY the view — no preamble, no commentary on your process.\n\n" + text
+    )
+
+
 def _check_summary(out: str) -> str:
     """Shared output guard: reject quota/limit responses and too-short stubs.
 
@@ -144,6 +196,44 @@ class LLMCompressor:
         return _check_summary(out)
 
 
+class RoleAwareLLMCompressor(LLMCompressor):
+    """The teacher-LLM compressor told what it is FOR — the 'specialised for the role' arm.
+
+    Same delivery path and determinism as LLMCompressor; only the prompt differs
+    (`_role_aware_prompt` vs the generic `_summary_prompt`). Pairing the two isolates how much of a
+    compressor's contribution is the model and how much is knowing its place in the architecture.
+
+    `set_context(level, n_levels)` supplies the pyramid position quoted in the prompt; the slice
+    size is measured from the text, so nothing has to be threaded through the caller.
+    """
+
+    name = "claude-haiku-4-5-roleaware"
+    accepts_context = True
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._level = self._n_levels = None
+
+    def set_context(self, level: int | None = None, n_levels: int | None = None) -> None:
+        self._level, self._n_levels = level, n_levels
+
+    def compress(self, text: str, target_tokens: int, level: int | None = None,
+                 n_levels: int | None = None) -> str:
+        import subprocess
+
+        from .textutils import n_tokens
+
+        prompt = _role_aware_prompt(text, target_tokens, slice_tokens=n_tokens(text),
+                                    level=level if level is not None else self._level,
+                                    n_levels=n_levels if n_levels is not None else self._n_levels)
+        r = subprocess.run(self._cmd(), input=prompt, capture_output=True, text=True,
+                           encoding="utf-8", timeout=self.timeout)
+        out = (r.stdout or "").strip()
+        if r.returncode != 0:
+            raise RuntimeError(f"claude -p exit {r.returncode}: {(r.stderr or '')[:200]}")
+        return _check_summary(out)
+
+
 class KiroCompressor:
     """Production teacher-LLM compressor via the Kiro CLI headless mode
     (`kiro-cli chat --no-interactive --model claude-haiku-4.5`), authenticated by
@@ -187,6 +277,11 @@ def get_compressor(name: str, **kwargs):
         return ExtractiveCompressor()
     if name == "llm":
         return LLMCompressor(**kwargs)
+    if name == "llm_roleaware":
+        return RoleAwareLLMCompressor(**kwargs)
+    if name == "graded":
+        from .compress_graded import GradedCodeCompressor
+        return GradedCodeCompressor(**kwargs)
     if name == "kiro":
         return KiroCompressor(**kwargs)
     raise ValueError(f"unknown compressor: {name}")
