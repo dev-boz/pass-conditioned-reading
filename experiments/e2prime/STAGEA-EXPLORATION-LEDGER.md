@@ -33,7 +33,7 @@ The chain needs **three** recorded facts — mapping `23→988`, adder `1365`, a
 ## Demand repairs (NOT levers — prerequisites for any next instantiation)
 
 1. Recording rubric demands **relations/behaviour** ("record what each function computes"), not only values/names/quotes.
-1a. **(added 07-29)** Recording demand must distinguish **load-bearing content from bulk**. The pass-26 tile is 94% auto-composed filler and the policy records it faithfully; "exact values, names and quotes" describes the filler's `i%40, weight>0.583` bodies perfectly. Either the demand carries a salience criterion or the fixture stops being 94% filler — measuring anything else through that ratio is measuring the ratio.
+1a. **(added 07-29; QUANTIFIED 08-06 by P1i, `SIGNAL-DENSITY-RESULTS.md`)** Recording demand must distinguish **load-bearing content from bulk**. The pass-26 tile is 94% auto-composed filler and the policy records it faithfully; "exact values, names and quotes" describes the filler's `i%40, weight>0.583` bodies perfectly. Either the demand carries a salience criterion or the fixture stops being 94% filler — measuring anything else through that ratio is measuring the ratio. **The number: signal share ≥ ~35% of a decisive view moves recording 1/20 → 7/20 (trend across the ladder p≈0.005); past ~35% returns are shallow (8-9/20 at 66-92%), and composition alone caps at ~half — the residue is grinding + name-without-rows, i.e. the training/demand side.**
 1b. **(added 07-29)** Recording demand must require **key→value bindings survive compression** — the queried row or the whole table, never the range. `24 surcharge rates (10-988 cents)` satisfies every rubric now on the board and destroys the lookup.
 2. Recording rubric **licenses ADD** for content with no home in the state.
 3. **Train demand = eval demand = scoring form** (`ANSWER: <integer>` present in training close rows).
@@ -81,10 +81,15 @@ The chain needs **three** recorded facts — mapping `23→988`, adder `1365`, a
 - **P1b RAN (+ controls)** — the headline: matching-home availability is the suppression variable. Adder 8–9/10, relation 4/10 applied with a home; ~0 without; slot syntax unnecessary; zero fabrication.
 - **P1d RAN** — k-channel inert (falsifier F2 negative for the current conditioning).
 - **P1c NOT YET RUN** — needs an `--enforce-budget` arm in `stagea_chain_gate.py`; the home-availability mechanism predicts an indirect effect at most.
+- **P1i RAN 2026-08-06** (`SIGNAL-DENSITY-RESULTS.md`) — the signal-density ladder, design committed pre-run, replicated on fresh seeds 21-30. Density is the constraint (10.0/35.5/66.4/92.3% signal → 1/7/8/9 of 20 pooled; trend p≈0.005); the step is 10%→35%; the prose-vs-code filler discriminator did not resolve (4/20, between poles); composition caps at ~half — the d90 misses are grinding loops and name-without-rows, hand-read.
 
 ## Immediately runnable for $0 (say the word)
 
-- **Archive scan (no GPU):** how often did the student's own Phase-A scaffold create a matching home for a later tile's content, and did recording rate track home availability across all 31 passes × 22 draws? This turns the P1b oracle result into a non-oracle measurement and is the direct evidence base for lever 5's training target.
-- **Relation-fill confirming run** (three-tier rule): fresh n≥10 on the home-present cells.
+*(07-28 list retired: archive scan RAN 07-29, relation-fill confirm RAN 07-29, signal-density
+ladder RAN 08-06 — results in `HOME-AVAILABILITY-RESULTS.md` and `SIGNAL-DENSITY-RESULTS.md`.)*
+
 - **P1c** — enforced 4,000-tok budget re-run (+ stage-scaled op_cap variant).
-- Lever 3 floor probe; M-NL prep.
+- **M-NL G2 (oracle ceiling)** — held for the maintainer's alternative to `claude -p`.
+- Lever 3 floor probe.
+- P1i extension if ever needed: a home-present arm (does density still bind when the state holds a
+  table home?), and a tail-row query (transcription truncation, observed once).
