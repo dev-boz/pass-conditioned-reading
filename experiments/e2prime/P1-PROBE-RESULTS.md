@@ -1,5 +1,14 @@
 # P1 probe battery — results (2026-07-28)
 
+> **SUPERSEDED IN PART, 2026-07-29.** The synthesis below ("home availability is the recording
+> variable") is too simple and is corrected in `HOME-AVAILABILITY-RESULTS.md` §6. The operative
+> variable is home availability **with competing matchable content absent** — the `ctrl8` oracle
+> state fills well because its other entries are inert, not because it has homes. When the model
+> fills a scaffold it built itself, which necessarily covers every module, acquisition is **0/10**
+> despite 8/10 dedicated homes. Also corrected there: the ctrl8 adder rate is ~5–9/10 across seed
+> blocks, not 9/10 (fresh-seed confirm 5/10). The relation 4/10 result **replicated** at seeds
+> 11–20 (3/10, p=1.00), discharging reading 4 below.
+
 **Status:** probes, `gate_legal:false`, frozen weights, $0. Runner: `stagea_p1_probes.py`
 (dual proposed/applied scoring; every op-level metric reports *emitted* — what the model wrote —
 and *applied* — what the strict guard let into the state). Artifacts:
